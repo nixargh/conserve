@@ -1,0 +1,9 @@
+/var/log/conserve.log {
+	compress
+	delaycompress
+	dateext
+	missingok
+	rotate 30
+	size 2M
+}
+
