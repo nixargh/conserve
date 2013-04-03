@@ -1,11 +1,13 @@
 #!/bin/bash
 #### INFO ######################################################################
 # (*w) 
-VERSION=2
+VERSION=3
 #### SETTINGS ##################################################################
 BIN='conserve'
+LIBS='lib'
 CONFDIR='/etc/conserve'
 BINDIR='/usr/sbin'
+LIBDIR='/usr/lib/conserve'
 INFORM='inform.conf'
 CRED='cred'
 LOGROTATE='conserve.lr'
@@ -31,10 +33,20 @@ function install {
 		mkdir $CONFDIR
 	fi
 	chmod 770 $CONFDIR
+
 	cp -f ./$BIN $BINDIR/conserve
 	echo "	./$BIN copied to $BINDIR/conserve"
 	chmod 755 $BINDIR/conserve
 	chown root:root $BINDIR/conserve
+
+	if test ! -d $LIBDIR; then
+		mkdri $LIBDIR
+	fi
+	cp -f ./$LIBS/* $LIBDIR
+	echo "	libs copied to $LIBDIR"
+	chmod 644 $LIBDIR
+	chown root:root $LIBDIR
+
 	copyconf $INFORM
 	copyconf $CRED
 	CONFDIR='/etc/logrotate.d'
