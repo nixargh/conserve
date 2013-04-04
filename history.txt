@@ -73,12 +73,12 @@ conserve:
 		
 	1.9.16
 		+	1.	Color schemes for Inform email added, use option "colors=white" or "colors=console" at inform.conf file. Now you can add new scheme only
-			at Inform::color_schema inside "conserve".
+			at Inform#color_schema inside "conserve".
 	1.9.17
 		+	1. Code was splitted to number of files on Class basis.
-		+	2. Inform::send_mail. Added rescue for EOFError exeptions. This exeption was raised when mail send failed because of authentication problem. 
-		+	3. Ruby_gems::detect_os. Detection of CentOS was added.
-		+	4. Ruby_gems::install_rubygems. Automated rubygems installation at Ubuntu and CentOS was added.
+		+	2. Inform#send_mail. Added rescue for EOFError exeptions. This exeption was raised when mail send failed because of authentication problem. 
+		+	3. Ruby_gems#detect_os. Detection of CentOS was added.
+		+	4. Ruby_gems#install_rubygems. Automated rubygems installation at Ubuntu and CentOS was added.
 
 	to do:
 		-	1. "Copy to" email option not working, case it's not writed :)
