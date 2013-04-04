@@ -40,7 +40,7 @@ function install {
 	chown root:root $BINDIR/conserve
 
 	if test ! -d $LIBDIR; then
-		mkdri $LIBDIR
+		mkdir $LIBDIR
 	fi
 	cp -f ./$LIBS/* $LIBDIR
 	echo "	libs copied to $LIBDIR"

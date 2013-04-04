@@ -171,15 +171,21 @@ class Backup
 	end
 
 	def get_image_file_size(file)
-		image_size = nil
-		if File.extname(file) == '.gz'
-			#puts "\t\tDetermining the size of image file archived in #{file},\n\t\tit can take anywhere from 5 minutes to an hour, depending on the size of the original image."
-			image_size = `zcat #{file} |wc -c`
-			image_size = image_size.chomp.to_i
-		else
-			image_size = File.size?(file)
+		begin
+			image_size = nil
+			if File.extname(file) == '.gz'
+				#puts "\t\tDetermining the size of image file archived in #{file},\n\t\tit can take anywhere from 5 minutes to an hour, depending on the size of the original image."
+				zcat_log = '/tmp/zcat.log'
+				image_size = `zcat #{file} 2>#{zcat_log} |wc -c`
+				raise "\"#{file}\" archive was corrupted" if !IO.read(zcat_log).empty?
+				image_size = image_size.chomp.to_i
+			else
+				image_size = File.size?(file)
+			end
+			image_size # size in bytes
+		ensure
+			File.unlink(zcat_log)
 		end
-		image_size # size in bytes
 	end
 	
 	def make_image(partition, path)

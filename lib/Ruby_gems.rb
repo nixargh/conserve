@@ -9,24 +9,44 @@ class Ruby_gems
 	def install_rubygems
 		answer = nil
 		while answer != 'y' && answer != 'n' do
-			print "\t\tWould you like to install \"ruby gem\" utility from ftp://#{@rpm_download_site}? [y|n]: "
+			print "\t\tWould you like to install \"ruby gem\" utility? [y|n]: "
 			answer = $stdin.gets.chomp
 		end
 		if answer == 'n'
 			raise "Inform aborded"
 		else
 			begin
-				download_dir = "/tmp/ruby_rpms_temp"
-				Dir.mkdir(download_dir)
-				Dir.chdir(download_dir)
-				get_rubygems_rpms
-				install_rubygems_rpms
+				os = detect_os[0]
+				if os == 'Ubuntu'
+					`apt-get update`
+					`apt-get -y install rubygems`
+				elsif os == 'CentOS'
+					`yum -y install rubygems`
+				elsif os.index('SLES11')
+					while answer != 'y' && answer != 'n' do
+						print "Install it for ftp://#{@rpm_download_site}? [y|n]: "
+						answer = $stdin.gets.chomp
+					end
+					if answer == 'n'
+			                        raise "Inform aborded"
+					else
+						download_dir = "/tmp/ruby_rpms_temp"
+						Dir.mkdir(download_dir)
+						Dir.chdir(download_dir)
+						get_rubygems_rpms
+						install_rubygems_rpms
+					end
+				else
+					raise 'Don\'t know how to install ruby gem package for your OS. Please do it manually and rerun this job'
+				end
 			ensure
-				Dir.entries(download_dir).each{|file|
-					File.unlink(file) if file != '.' && file != '..'
-				}
-				Dir.unlink(download_dir)
-				Dir.chdir
+				if download_dir
+					Dir.entries(download_dir).each{|file|
+						File.unlink(file) if file != '.' && file != '..'
+					}
+					Dir.unlink(download_dir)
+					Dir.chdir
+				end
 			end
 		end
 	end
@@ -73,6 +93,9 @@ class Ruby_gems
 			arch = ((rel_info[0].split('('))[1].split(')'))[0]
 		elsif rel_info[0] == 'DISTRIB_ID=Ubuntu'
 			os = 'Ubuntu'
+			arch = nil
+		elsif rel_info[0].index('CentOS')
+			os = 'CentOS'
 			arch = nil
 		end
 		result = [os, arch]

@@ -256,7 +256,10 @@ class Inform
 			error = $!
 		rescue SocketError
 			error = $!
+		rescue EOFError
+			error = "Email sending failed: #{$!}. Maybe you forgot to set up Anonymous Receive Connector or a wrong credentials were set."
 		rescue => detail
+			@log.write(detail.class)
 			@log.write(detail.backtrace.join("\n"))
 			error = $!
 		end
