@@ -458,15 +458,19 @@ def restoring_nonboot_partitions(hdd)
 end
 
 def make_swap(swap)
-	if check_swap(swap) == false
-		print_f "\tCreating swap on #{swap} - "
-		`/sbin/mkswap -c #{swap}; /sbin/swapon #{swap}`
-		if check_swap(swap)
-			puts "OK."
-		else
-			puts "Failed."
-			raise "swap creation on #{swap} failed. Restore without swap will call \'BUS ERROR\'. Try to create swap manually."
+	if swap
+		if check_swap(swap) == false
+			print_f "\tCreating swap on #{swap} - "
+			`/sbin/mkswap -c #{swap}; /sbin/swapon #{swap}`
+			if check_swap(swap)
+				puts "OK."
+			else
+				puts "Failed."
+				raise "swap creation on #{swap} failed. Restore without swap will call \'BUS ERROR\'. Try to create swap manually."
+			end
 		end
+	else
+		puts "\tNo information about swap found. You can create it manually later."
 	end
 end
 
@@ -496,8 +500,9 @@ def lvm_operates(lvm_partitions, root, swap)
 				swap_lvm_partition = $stdin.gets.chomp
 			end
 		end
-		lvm_create(swap_lvm_partition, swap)
+		lvm_create(swap_lvm_partition, swap) if swap
 		lvm_create(root_lvm_partition, root)
+		
 	end
 end
 
@@ -625,6 +630,7 @@ def guess_swap_size
 end
 
 def parse_lvm(path)
+	return nil if !path
 	puts "\t\tGetting LVM structure for #{path}..."
 	splited_path = path.split('/')
 	vg = splited_path[2]
@@ -667,6 +673,7 @@ def parse_grub_menu(fs_root)
 				(line.split(" ")).each{|param|
 					if param.index('root=')
 						root = (param.split('='))[1]
+						$backup_files[File.basename(root)] = $backup_files['root'] 
 					elsif param.index('resume=')
 						swap = (param.split('='))[1]
 					end
