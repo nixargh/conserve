@@ -46,7 +46,6 @@ class Inform
 			@log.write("\t\t#{yellow("Creating report:")} method \"#{@config['method']}\".")
 			if @config['method'] == 'email'
 				send_mail
-		
 			end
 		else
 			@log.write("\t\t#{yellow("Nothing to report:")} report case \"#{@config['when_inform']}\" selected.")
@@ -214,7 +213,7 @@ class Inform
 			if @log.log_file
 				log = File.read(@log.log_file)
 			else
-				raise "Can't attach log file, because it's not specified."
+				raise "Can't read log file, because it's not specified."
 			end
 
 			if check_potential_log_size(log) >= 2097152
@@ -258,6 +257,10 @@ class Inform
 			error = $!
 		rescue EOFError
 			error = "Email sending failed: #{$!}. Maybe you forgot to set up Anonymous Receive Connector or a wrong credentials were set."
+		rescue RuntimeError
+			error = $!
+		rescue OpenSSL::SSL::SSLError
+			error = "SSL connection to mail server failed: #{$!}."
 		rescue => detail
 			@log.write(detail.class)
 			@log.write(detail.backtrace.join("\n"))

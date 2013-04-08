@@ -28,7 +28,7 @@ class Log
 	end
 
 	def to_stdout(info,el)
-		print info + el
+		print "#{info}#{el}"
 	end
 	
 	def to_log(info, el)

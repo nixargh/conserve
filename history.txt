@@ -80,6 +80,8 @@ conserve:
 		+	3. Ruby_gems#detect_os: Detection of CentOS was added.
 		+	4. Ruby_gems#install_rubygems: Automated rubygems installation at Ubuntu and CentOS was added.
 		+	5. Backup#get_image_file_size: Check of 'zcat' error added. 'zcat' used to calculated created image size from gzip archive.
+		+	6. Inform#send_mail: Added rescue for RuntimeError exeptions.
+		+	7. Inform#send_mail: Added rescue for OpenSSL::SSL::SSLError exeptions.
 
 	to do:
 		-	1. "Copy to" email option not working, case it's not writed :)
