@@ -112,16 +112,8 @@ class Backup
 ###########
 	private
 ###########
-	def get_partition_size(device)
-		size = nil
-		info = `fdisk -l #{device} 2>/dev/null`
-		info.each_line{|line|
-			if line.index(device)
-				line = line.split(' ')
-				size = line[line.length - 2]
-			end
-		}
-		size.to_i
+	def get_device_size(device)
+		size = `blockdev --getsize64 #{device}`.strip.to_i
 	end
 
 	def backup_mbr(source_device, destination_file)
@@ -177,7 +169,11 @@ class Backup
 				#puts "\t\tDetermining the size of image file archived in #{file},\n\t\tit can take anywhere from 5 minutes to an hour, depending on the size of the original image."
 				zcat_log = '/tmp/zcat.log'
 				image_size = `zcat #{file} 2>#{zcat_log} |wc -c`
-				raise "\"#{file}\" archive was corrupted" if !IO.read(zcat_log).empty?
+				zcat_error = IO.read(zcat_log)
+				if !zcat_error.empty?
+					@log.write(zcat_error)
+					raise "\"#{file}\" archive was corrupted"
+				end
 				image_size = image_size.chomp.to_i
 			else
 				image_size = File.size?(file)
@@ -202,7 +198,7 @@ class Backup
 			end
 			info = IO.read(dd_log)
 			if info.index("copied")
-				partition_size = get_partition_size(partition)
+				partition_size = get_device_size(partition)
 				image_size = get_image_file_size(path)
 				if partition_size == image_size
 					@log.write("[ #{green('OK')} ]")

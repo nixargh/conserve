@@ -82,6 +82,7 @@ conserve:
 		+	5. Backup#get_image_file_size: Check of 'zcat' error added. 'zcat' used to calculated created image size from gzip archive.
 		+	6. Inform#send_mail: Added rescue for RuntimeError exeptions.
 		+	7. Inform#send_mail: Added rescue for OpenSSL::SSL::SSLError exeptions.
+		+	8. Backup#detect_device_size: renamed from detect_partition_size and rewrited to use 'blockdev' utility.
 
 	to do:
 		-	1. "Copy to" email option not working, case it's not writed :)
