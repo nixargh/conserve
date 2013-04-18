@@ -107,6 +107,7 @@ restore:
 	0.9.3
 		+	1. Detection of block device existance.
 		+	2. Skipping swap creation if device for swap doesn't exist.
+		+	3. Add dialog to change partition id to "Linux LVM".
 	
 	to do:
 		-	1. проверка что на диске достаточно места для восстановления образов 

@@ -429,10 +429,22 @@ def restoring_nonboot_partitions(hdd)
 		puts "\tStarting restore of non-boot partitions."
 		part_list = list_other_partitions(hdd)
 		build_table_of_partitions(part_list).each{|key, value|
-			if value == 'LVM'
+			if value == 'Linux LVM'
 				lvm_partitions.push(key)
 			elsif value == 'Linux'
-				raise "Don't know what to do with Linux type of partitions, yet..."
+				raise "\tDon't know how to restore \"#{value}\ partitions." 
+			else
+				puts "\tDon't know what to do with \"#{value}\" type of partitions."
+				puts "\t\tDo you want to try it as \"Linux LVM\"?"
+				print "\t\tChange #{key} type from \"#{value}\" to \"Linux LVM\"?[y]: "
+				if gets.chomp == 'y'
+					dev = key.delete("0-9")
+					p_num = key[-1, 1]
+					`sfdisk -c #{dev} #{p_num} 8e`	
+					lvm_partitions.push(key)
+				else
+					raise "\tDon't know how to restore \"#{value}\ partitions." 
+				end
 			end
 		}
 		mount_dir = mount_local($boot_partition)
@@ -699,7 +711,7 @@ end
 def get_name_and_type(part_list)
 	part_types = Hash.new
 	part_list.each{|partition|
-		part_info = partition.split(" ")
+		part_info = partition.split(" ", 6)
 		part_types[part_info[0]] = part_info[part_info.length - 1]
 	}
 	part_types
