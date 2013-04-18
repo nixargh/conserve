@@ -1,7 +1,7 @@
 conserve
 ========
 
-<p>Conserve - is a linux backup utility.</p>
+Conserve - is a linux backup utility.
 
 It designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files too.
 It is writed on ruby. 
