@@ -442,15 +442,15 @@ def restoring_nonboot_partitions(hdd)
 					p_num = key[-1, 1]
 					`sfdisk -c #{dev} #{p_num} 8e`	
 					lvm_partitions.push(key)
-				else
-					raise "\tDon't know how to restore \"#{value}\ partitions." 
 				end
 			end
 		}
 		mount_dir = mount_local($boot_partition)
-		root, swap = parse_grub_menu(mount_dir)
+		# root, swap = parse_grub_menu(mount_dir)
+		root = parse_grub_menu(mount_dir)
 		# lvm partitions restore
-		lvm_operates(lvm_partitions, root, swap)
+		#lvm_operates(lvm_partitions, root, swap)
+		lvm_operates(lvm_partitions, root)
 		# add here non-lvm partitions restore
 		# restoring swap
 		make_swap(swap)
@@ -694,8 +694,8 @@ def parse_grub_menu(fs_root)
 					if param.index('root=')
 						root = (param.split('='))[1]
 						$backup_files[File.basename(root)] = $backup_files['root'] 
-					elsif param.index('resume=')
-						swap = (param.split('='))[1]
+#					elsif param.index('resume=')
+#						swap = (param.split('='))[1]
 					end
 				}
 			end
@@ -705,7 +705,8 @@ def parse_grub_menu(fs_root)
 	end
 	puts "\t\t\Found: \"root\" is #{root}."
 	puts "\t\tFound: \"swap\" is #{swap}."
-	return root, swap
+	return root
+#	return root, swap
 end
 
 def get_name_and_type(part_list)
