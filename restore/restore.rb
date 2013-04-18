@@ -5,7 +5,7 @@
 # 	1. SLES11 x86 on Hyper-V
 #	2. SLES11 sp.1 x86 at HP DL160 G5
 # (*w)
-$version = '0.9.2'
+$version = '0.9.3'
 #### SETTINGS ##################################################################
 $net_mount_dir = '/mnt/net'
 $backup_files = {'mbr' => 'mbr.img', 'boot' => 'boot.img', 'root' => 'root.img'}
@@ -459,19 +459,27 @@ end
 
 def make_swap(swap)
 	if swap
-		if check_swap(swap) == false
-			print_f "\tCreating swap on #{swap} - "
-			`/sbin/mkswap -c #{swap}; /sbin/swapon #{swap}`
-			if check_swap(swap)
-				puts "OK."
-			else
-				puts "Failed."
-				raise "swap creation on #{swap} failed. Restore without swap will call \'BUS ERROR\'. Try to create swap manually."
+		if block_device_exist?(swap)
+			puts "\tswap device \"#{swap}\" exist."
+			if check_swap(swap) == false
+				print_f "\tCreating swap on #{swap} - "
+				`/sbin/mkswap -c #{swap}; /sbin/swapon #{swap}`
+				if check_swap(swap)
+					puts "OK."
+				else
+					puts "Failed."
+				end
 			end
+		else
+			puts "\tswap device \"#{swap}\" not found. swap creation failed."
 		end
 	else
 		puts "\tNo information about swap found. You can create it manually later."
 	end
+end
+
+def block_device_exist?(device)
+	File.blockdev?(device)
 end
 
 def check_swap(swap)

@@ -1,4 +1,4 @@
-history version 2.13
+history version 2.14
 (sorry some part only on Russian)
 
 conserve:
@@ -86,7 +86,6 @@ conserve:
 		+	9. "Copy to" email option writed.
 
 	to do:
-		-	1. Hash credentials saved at file (probably need Crypt Gem).
 
 restore:
 	older versions:
@@ -104,6 +103,10 @@ restore:
 		+	8. [0.7.1] восстановление заархивированных образов
 		+	9. [BUG] 01/07/2011 - fixed at 0.8.1 - [Last run error: Can't restore other partitions: root restore failed: "records out" not equal "records in".]
 				when restore from archive
+	
+	0.9.3
+		+	1. Detection of block device existance.
+		+	2. Skipping swap creation if device for swap doesn't exist.
 	
 	to do:
 		-	1. проверка что на диске достаточно места для восстановления образов 
