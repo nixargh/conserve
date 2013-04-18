@@ -56,6 +56,7 @@ class Inform
 	private
 ###########
 	def color_schema(item)
+		@config['colors'] = 'console' if !@config['colors']
 		if @config['colors'] == 'console'
 			colors = {
 				'background' => 'black',
@@ -241,6 +242,7 @@ class Inform
 				mail = Mail.new do
 					from     config['mail_from']
 					to       config['mail_to']
+					cc		 config['copy_to']
 					subject  diff_subject
 					html_part do
 						content_type 'text/html; charset=UTF-8'

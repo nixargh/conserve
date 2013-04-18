@@ -83,14 +83,10 @@ conserve:
 		+	6. Inform#send_mail: Added rescue for RuntimeError exeptions.
 		+	7. Inform#send_mail: Added rescue for OpenSSL::SSL::SSLError exeptions.
 		+	8. Backup#detect_device_size: renamed from detect_partition_size and rewrited to use 'blockdev' utility.
+		+	9. "Copy to" email option writed.
 
 	to do:
-		-	1. "Copy to" email option not working, case it's not writed :)
-		-	2. Hash credentials saved at file (probably need Crypt Gem).
-		-	3. [BUG] *Can't reproduce* 01/07/2011 -  - [Running image creation of /dev/sda1, please wait... - Fri Jul  1 14:29:02 2011 -  
-				*** "parse_and_mount" destination error: Can't mount device or network share: No such file or directory - /tmp/conseve_cmd_err.log ***
-				Fri Jul  1 14:29:02 2011 -      *** "parse_and_mount" destination error: Can't mount device or network share:
-				No such file or directory -	/tmp/conseve_cmd_err.log ***]
+		-	1. Hash credentials saved at file (probably need Crypt Gem).
 
 restore:
 	older versions:
