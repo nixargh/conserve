@@ -84,8 +84,27 @@ conserve:
 		+	7. Inform#send_mail: Added rescue for OpenSSL::SSL::SSLError exeptions.
 		+	8. Backup#detect_device_size: renamed from detect_partition_size and rewrited to use 'blockdev' utility.
 		+	9. "Copy to" email option writed.
+	
+	!!! Vertion system changes !!!
+	example - v.0.2.1.4:
+			0 - release
+			2 - major number, equal to last master branch
+			1 - minor number, equal to current development version
+			4 - number of last added feature or bug fix or something
+
+	0.2.0
+		+	1.
 
 	to do:
+			1. option to save hdd devices, partitions and lvm structure information.
+			2. Baremetal backup option. It's collecting information and doing backup for all partitions.
+
+			What I need to recover full system?
+				1. Hardware disks information.
+				2. Software raid information. (/proc/mdstat)
+				3. Partition table.
+				4. Lvm structure.
+				5. Information of how to mount partition.
 
 restore:
 	older versions:

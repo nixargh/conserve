@@ -2,8 +2,8 @@
 #### INFO ######################################################################
 # Conserve
 # script for backup
-# (*w) author nixargh <nixargh@gmail.com>
-$version = '1.9.17'
+# (*w) author: nixargh <nixargh@gmail.com>
+$version = '0.2.0.0'
 #### SETTINGS ##################################################################
 $debug = false
 $lib_dir = '/usr/lib/conserve'
