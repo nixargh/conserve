@@ -1,4 +1,4 @@
-history version 2.14
+history version 2.16
 (sorry some part only on Russian)
 
 conserve:
@@ -93,11 +93,13 @@ conserve:
 			4 - number of last added feature or bug fix or something
 
 	0.2.0
-		+	1.
+		+	1. [BUG] Backup#mount_smb: '-o credential ' was specified instead of '-o credentials'. That affect only some systems.
 
 	to do:
-			1. option to save hdd devices, partitions and lvm structure information.
+		+-	1. Option to save hdd devices, partitions and lvm structure information.
 			2. Baremetal backup option. It's collecting information and doing backup for all partitions.
+			3. [BUG] Backup of files. With LVM: Trying to find /var/CommuniGate/ on ... -       Error:  *** Can't find where /dev/dm-4 mounted ***
+			4. Backup of files. Now it creates tar on destination. Need to add option to save as directory tree.
 
 			What I need to recover full system?
 				1. Hardware disks information.
@@ -129,11 +131,8 @@ restore:
 		+	3. Add dialog to change partition id to "Linux LVM".
 	
 	to do:
-		-	1. проверка что на диске достаточно места для восстановления образов 
-		-	2. восстановление LVM всех партиций, в случае когда структуру удалось обнаружить
-		-	3. под ubuntu-11.04: не работает восстановление, так как видимо grub2
-		-	4. [Не нашёл нужного пакета для SLAX] прикрутить где можно pv
-		
-backup:
-	to do:
-		-	1. собирать информацию что забэкапить и выполнять на её основе conserve с нужными параметрами
+			0. REWRITE RESTORE COMPLETELY! Going to use information collected in backup process.
+		#	1. проверка что на диске достаточно места для восстановления образов 
+		#	2. восстановление LVM всех партиций, в случае когда структуру удалось обнаружить
+		#	3. под ubuntu-11.04: не работает восстановление, так как видимо grub2
+		#	4. [Не нашёл нужного пакета для SLAX] прикрутить где можно pv

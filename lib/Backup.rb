@@ -297,7 +297,7 @@ class Backup
 			create_cred_file if File.exist?(@credential_file) == false
 			#credential_file = create_cred_file[2] if (credential_file = @credential_file) == nil
 #				puts "mount -t cifs #{what} #{mount_dir} -o credential=#{@credential_file}"
-			mount_stat = $operate.cmd_output("mount -t cifs #{what} #{mount_dir} -o credential=#{@credential_file}")
+			mount_stat = $operate.cmd_output("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
 			mount_check = check_mount_stat(mount_stat, what, mount_dir)
 			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
 			test_file = "#{path}/test_file"
