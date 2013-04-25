@@ -1,4 +1,4 @@
-history version 2.16
+history version 2.17
 (sorry some part only on Russian)
 
 conserve:
@@ -87,20 +87,20 @@ conserve:
 	
 	!!! Version system changes !!!
 	example - v.0.2.1.4:
-			0 - release
-			2 - major number, equal to last master branch
-			1 - minor number, equal to current development version
+			0 - major number of master branch
+			2 - minor number of master branch
+			1 - number of current development version
 			4 - number of last added feature or bug fix or something
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.
+		+	2. Collector Class. Collects information about hdd devices, software raids, partitions, lvm and how to mount all this staff.
 
 	to do:
-		+-	1. Option to save hdd devices, partitions and lvm structure information.
-			2. Baremetal backup option. It's collecting information and doing backup for all partitions.
-			3. [BUG] Backup of files. With LVM: Trying to find /var/CommuniGate/ on ... -       Error:  *** Can't find where /dev/dm-4 mounted ***
-			4. Backup of files. Now it creates tar on destination. Need to add option to save as directory tree.
-			5. Backup of files. Set source as list of files and/or directories and backup them to separate archives.
+			1. Baremetal backup option. It's collecting information and doing backup for all partitions.
+			2. [BUG] Backup of files. With LVM: Trying to find /var/CommuniGate/ on ... -       Error:  *** Can't find where /dev/dm-4 mounted ***
+			3. Backup of files. Now it creates tar on destination. Need to add option to save as directory tree.
+			4. Backup of files. Set source as list of files and/or directories and backup them to separate archives.
 
 			What I need to recover full system?
 				1. Hardware disks information.

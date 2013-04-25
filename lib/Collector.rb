@@ -7,11 +7,11 @@ class Collector
 		@info_dir = 'info'
 
 		# files to store creatures information 
-		hdd['info_file'] = "#{@info_dir}/hdd"
-		md['info_file'] = "#{@info_dir}/md"
-		partition['info_file'] = "#{@info_dir}/partition"
-		lvm['info_file'] = "#{@info_dir}/lvm"
-		mount['info_file'] = "#{@info_dir}/mount"
+#		hdd['info_file'] = "#{@info_dir}/hdd"
+#		md['info_file'] = "#{@info_dir}/md"
+#		partition['info_file'] = "#{@info_dir}/partition"
+#		lvm['info_file'] = "#{@info_dir}/lvm"
+#		mount['info_file'] = "#{@info_dir}/mount"
 
 		# Hash of creatures information hashes
 		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm, 'mount' => mount }
@@ -19,7 +19,8 @@ class Collector
 
 	def collect # collect iformation about creatures
 		list_disks!
-		@creatures.each_key{|creature|
+		#@creatures.each_key{|creature|
+		@creatures.sort.each{|creature, value|
 			@creatures[creature]['info'] = eval("get_#{creature}_info")
 		}
 		@creatures
@@ -67,7 +68,8 @@ class Collector
 
 	def get_partition_info # collect information about partition tables
 		partition_list = Array.new
-		@creatures['hdd']['info'].each{|hdd|
+		creatures = @creatures['hdd']
+		creatures['info'].each{|hdd|
 			if hdd['type'] == nil
 				partitions = Hash.new
 				partitions['disk'] = hdd['name']
@@ -82,9 +84,38 @@ class Collector
 	end
 
 	def get_lvm_info # collect information about LVM
+		begin
+			vg_list = Array.new
+			backup_dir = "/tmp/vgcfgbackup"
+			backup_files = Array.new
+			Dir.mkdir(backup_dir) if !Dir.exist?(backup_dir)
+			dir = Dir.open(backup_dir)
+			`vgcfgbackup -f #{backup_dir}/%s 2>1 1>/dev/null`
+			dir.each{|file|
+				if file != '.' && file !='..'
+					vg = Hash.new
+					vg['name'] = file
+					backup_file = "#{backup_dir}/#{file}"
+					backup_files.push(backup_file)
+					vg['config'] = IO.read(backup_file)
+					vg_list.push(vg)
+				end
+			}
+			vg_list
+		ensure
+			backup_files.each{|file|
+				File.unlink(file) if File.exist?(file)
+			}
+			Dir.unlink(backup_dir) if Dir.exist?(backup_dir)
+		end
 	end
 
 	def get_mount_info # collect information about how to mount partitions
+		mounts = Array.new
+		IO.read('/etc/fstab').each_line{|line|
+			mounts.push(line.split(' ')) if line.index('#') != 0
+		}
+		mounts
 	end
 
 	def list_disks! # create list with sizes of different disk devices on current machine
@@ -117,7 +148,7 @@ class Collector
 		return uuid, type
 	end
 
-	def read_partitions(disk) # read partitions table of disk
+	def read_partitions(disk) # read partitions table of disk + some of partition attributes
 		info = `sfdisk -l #{disk} -d -x`	
 		partitions = Array.new
 		info.each_line{|line|
@@ -138,11 +169,3 @@ class Collector
 		partitions
 	end
 end
-
-# Test section
-collector = Collector.new
-info = collector.collect
-info.each{|key, value|
-	puts "#{key} = #{value}"
-}
-

@@ -3,7 +3,7 @@
 # Conserve
 # script for backup
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.0.1'
+$version = '0.2.0.2'
 #### SETTINGS ##################################################################
 $debug = false
 $lib_dir = '/usr/lib/conserve'
