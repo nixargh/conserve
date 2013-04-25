@@ -3,16 +3,6 @@ class Collector
 		# creatures list
 		hdd, md, partition, lvm, mount = Hash.new, Hash.new, Hash.new, Hash.new, Hash.new
 
-		# directory to store creatures files 
-		@info_dir = 'info'
-
-		# files to store creatures information 
-#		hdd['info_file'] = "#{@info_dir}/hdd"
-#		md['info_file'] = "#{@info_dir}/md"
-#		partition['info_file'] = "#{@info_dir}/partition"
-#		lvm['info_file'] = "#{@info_dir}/lvm"
-#		mount['info_file'] = "#{@info_dir}/mount"
-
 		# Hash of creatures information hashes
 		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm, 'mount' => mount }
 	end

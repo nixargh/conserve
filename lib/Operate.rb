@@ -11,12 +11,12 @@ class Operate
 		@log_enabled = nil
 		@cred_file = nil
 		@archive = nil
-		@module = nil
 		@backup = nil
 		@mbr = nil
 		@inform = nil
 		$argv = nil
 		$job_name = nil
+		$sysinf = nil
 	end
 	
 	def ensure
@@ -32,7 +32,7 @@ class Operate
 		begin
 			status = 0
 			error = nil
-			raise 'Nothing will happen without parametrs. Use "--help" for full list.' if ARGV == []
+			raise 'Nothing will happens without parametres. Use "--help" for full list.' if ARGV == []
 			$argv = ARGV
 			ARGV.each{|arg|
 				if arg == '-h' || arg == '--help'
@@ -55,8 +55,6 @@ class Operate
 					raise "You must enter root mount directory." if (@mountdir = arg.split('=')[1]) == nil
 				elsif arg.index('--credential') == 0 || arg.index('-c') == 0
 					raise "You must enter full path to credential file." if (@cred_file = arg.split('=')[1]) == nil
-				elsif arg.index('--add_module') == 0 || arg.index('-a') == 0
-					raise "You must enter full path to module file." if (@module = arg.split('=')[1]) == nil
 				elsif arg.index('--inform') == 0 || arg.index('-i') == 0
 					raise "You must enter full path to config file." if (@inform = arg.split('=')[1]) == nil
 				elsif arg.index('--job_name') == 0 || arg.index('-n') == 0
@@ -81,23 +79,20 @@ class Operate
 		begin
 			status = 0
 			error = nil
-			$job_name = $argv if $job_name == nil
+			$job_name = 'Default Backup Job Name' if $job_name == nil
 			if @log_enabled == true
 				$log.log_enabled = true
 				$log.log_file = @log_file
 			end
-			if @module != nil
-					#puts "we will use #{@module} module."
-					require @module
-			else
-				@backup = Backup.new(@source,@destination)
-				@backup.mbr = true if @mbr == true
-				@backup.use_lvm = false if @use_lvm == false
-				@backup.mount_point = @mountdir if @mountdir != nil
-				@backup.credential_file = @cred_file if @cred_file != nil
-				@backup.archive = true if @archive == true
-				@backup.create
-			end
+			collector = Collector.new
+			$sysinf = collector.collect
+			@backup = Backup.new(@source,@destination)
+			@backup.mbr = true if @mbr == true
+			@backup.use_lvm = false if @use_lvm == false
+			@backup.mount_point = @mountdir if @mountdir != nil
+			@backup.credential_file = @cred_file if @cred_file != nil
+			@backup.archive = true if @archive == true
+			@backup.create
 		rescue
 			status = 1
 			error = $!
@@ -123,9 +118,7 @@ class Operate
 		result = [status, error, cmd_info, cmd_error] 
 	end
 
-	###########
 	private
-###########
 
 	def help()
 		puts "Conserve v.#{$version}
@@ -145,7 +138,6 @@ Options:
 	-m=	--mountdir='/dir'\t\t\troot directory to mount network shares (\"/mnt\" by default)
 	-c=	--credential='file'\t\t\tfull path to file with smb credentials. File format as for cifs mount.
 	-z	--gzip\t\t\t\t\tarchive block device image by gzip or tar and gzip files when backuping non block device
-	-a=	--add_module='/dir/module_file'\t\tadd module for some specific backup
 	\t--mbr\t\t\t\t\tbackup MBR from device pointed like source
 	-i=	--inform='/dir/inform.conf'\t\tinform about backup status as described at config file
 	\t\t\t\t\t\tif no config file found it will be created

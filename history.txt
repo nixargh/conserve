@@ -1,4 +1,4 @@
-history version 2.17
+history version 2.18
 (sorry some part only on Russian)
 
 conserve:
@@ -95,6 +95,7 @@ conserve:
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.
 		+	2. Collector Class. Collects information about hdd devices, software raids, partitions, lvm and how to mount all this staff.
+		+	3. --add_module option was removed.
 
 	to do:
 			1. Baremetal backup option. It's collecting information and doing backup for all partitions.
