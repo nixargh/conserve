@@ -1,5 +1,4 @@
 class Log
-
 	attr_accessor :log_file, :log_enabled, :start_time
 	
 	def initialize()
@@ -51,5 +50,13 @@ class Log
 		result = [status, error]
 	end
 	
-	
+	def colorize(text, color_code)
+	  "#{color_code}#{text}\e[0m"
+	end
+
+	def red(text); colorize(text, "\e[31m"); end
+	def green(text); colorize(text, "\e[32m"); end
+	def yellow(text); colorize(text, "\e[33m"); end
+	def sky_blue(text); colorize(text, "\e[36m"); end
+		
 end

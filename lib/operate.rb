@@ -1,22 +1,5 @@
 class Operate
-	attr_accessor :destination
-	
 	def initialize
-		@action = nil
-		@log_file = nil
-		@source = nil
-		@destination = nil
-		@mountdir = nil
-		@use_lvm = nil
-		@log_enabled = nil
-		@cred_file = nil
-		@archive = nil
-		@backup = nil
-		@mbr = nil
-		@inform = nil
-		$argv = nil
-		$job_name = nil
-		$sysinf = nil
 	end
 	
 	def ensure
@@ -28,51 +11,44 @@ class Operate
 		end
 	end
 
-	def read_arguments()
-		begin
-			status = 0
-			error = nil
-			raise 'Nothing will happens without parametres. Use "--help" for full list.' if ARGV == []
-			$argv = ARGV
-			ARGV.each{|arg|
-				if arg == '-h' || arg == '--help'
-					help
-					exit 0
-				elsif arg == '--no_lvm'
-					@use_lvm = false
-				elsif arg == '--gzip' || arg == '-z'
-					@archive = true
-				elsif arg.index('--log') == 0 || arg.index('-l') == 0
-					@log_enabled = true
-					raise "You must enter full log path." if (@log_file = arg.split('=')[1]) == nil
-				elsif arg.index('--mbr') == 0
-					@mbr = true
-				elsif arg.index('--source') == 0 || arg.index('-s') == 0
-					raise "You must enter source path." if (@source = arg.split('=')[1]) == nil
-				elsif arg.index('--destination') == 0 || arg.index('-d') == 0
-					raise "You must enter destination path." if (@destination = arg.split('=')[1]) == nil
-				elsif arg.index('--mountdir') == 0 || arg.index('-m') == 0
-					raise "You must enter root mount directory." if (@mountdir = arg.split('=')[1]) == nil
-				elsif arg.index('--credential') == 0 || arg.index('-c') == 0
-					raise "You must enter full path to credential file." if (@cred_file = arg.split('=')[1]) == nil
-				elsif arg.index('--inform') == 0 || arg.index('-i') == 0
-					raise "You must enter full path to config file." if (@inform = arg.split('=')[1]) == nil
-				elsif arg.index('--job_name') == 0 || arg.index('-n') == 0
-					raise "You must enter backup job name." if ($job_name = arg.split('=')[1]) == nil
-				elsif arg == '-v' || arg == '--version'
-					puts "Conserve - backup tool v.#{$version} (*w)"
-					exit 0
-				elsif arg == '--debug'
-					$debug == true
-				else
-					raise "Bad parametr #{arg}. Use \"--help\" for full list of parametrs."
-				end
-			}
-		rescue
-			status = 1
-			error = $!
-		end
-		result = [status, error]
+	def read_arguments
+		raise "Nothing will happens without parametres. Use \"--help\" or \"-h\" for full list." if ARGV == []
+		params = Hash.new
+		ARGV.each{|arg|
+			if arg == '-h' || arg == '--help'
+				help
+				exit 0
+			elsif arg == '--no_lvm'
+				params['use_lvm'] = false
+			elsif arg == '--gzip' || arg == '-z'
+				params['archive'] = true
+			elsif arg.index('--log') == 0 || arg.index('-l') == 0
+				params['log_enabled'] = true
+				raise "You need to enter full log path." if !(params['log_file'] = arg.split('=')[1])
+			elsif arg.index('--mbr') == 0
+				params['mbr'] = true
+			elsif arg.index('--source') == 0 || arg.index('-s') == 0
+				raise "You must enter source path." if (params['source'] = arg.split('=')[1]) == nil
+			elsif arg.index('--destination') == 0 || arg.index('-d') == 0
+				raise "You must enter destination path." if (params['destination'] = arg.split('=')[1]) == nil
+			elsif arg.index('--mountdir') == 0 || arg.index('-m') == 0
+				raise "You must enter root mount directory." if (params['mountdir'] = arg.split('=')[1]) == nil
+			elsif arg.index('--credential') == 0 || arg.index('-c') == 0
+				raise "You must enter full path to credential file." if (params['cred_file'] = arg.split('=')[1]) == nil
+			elsif arg.index('--inform') == 0 || arg.index('-i') == 0
+				raise "You must enter full path to config file." if (params['inform'] = arg.split('=')[1]) == nil
+			elsif arg.index('--job_name') == 0 || arg.index('-n') == 0
+				raise "You must enter backup job name." if (params['job_name'] = arg.split('=')[1]) == nil
+			elsif arg == '-v' || arg == '--version'
+				puts "Conserve - backup tool v.#{$version} (*w)"
+				exit 0
+			elsif arg == '--debug'
+				params['debug'] == true
+			else
+				raise "Bad parametr #{arg}. Use \"--help\" or \"-h\" for full list of parametrs."
+			end
+		}
+		params
 	end
 	
 	def action()
@@ -84,8 +60,6 @@ class Operate
 				$log.log_enabled = true
 				$log.log_file = @log_file
 			end
-			collector = Collector.new
-			$sysinf = collector.collect
 			@backup = Backup.new(@source,@destination)
 			@backup.mbr = true if @mbr == true
 			@backup.use_lvm = false if @use_lvm == false
