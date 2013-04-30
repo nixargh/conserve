@@ -8,6 +8,8 @@ $version = '0.2.0.4'
 require 'fileutils'
 #### CLASES ####################################################################
 class Conserve
+	attr_accessor :debug
+
 	def initialize
 		@debug = false
 		@lib_dir = '/usr/lib/conserve'
@@ -16,7 +18,7 @@ class Conserve
 		@log = nil
 	end
 
-	def run
+	def run # run all that staff
 		load_libraries!
 		parse_arguments!
 		start_logging!
@@ -39,10 +41,21 @@ class Conserve
 	def parse_arguments! # parse command line arguments
 		operate = Operate.new
 		@params = operate.read_arguments
+		@debug = @params['debug']
+		puts @params if @debug
 	end
 
-	def start_logging!
-		@log = Log.new
+	def start_logging! # configure output
+		log = Log.new
+		if @params['log_enabled']
+			log.enable # start log to file instead of stdout
+			log.file = @params['log_file']
+		end
+		@log = log
+		if @debug
+			@log.write_noel("\tLogging started.", 'yellow')
+			@params['log_enabled'] ? @log.write(" Logging to file - #{log.file}") : @log.write
+		end
 	end
 
 	def collect_info # collect system information about disk, raids, partitions, lvm and mounts
@@ -57,5 +70,6 @@ begin
 	conserve.run
 rescue
 	puts "\t#{$!}"
+	puts $!.backtrace if conserve.debug
 	exit 1
 end

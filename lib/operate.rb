@@ -43,7 +43,7 @@ class Operate
 				puts "Conserve - backup tool v.#{$version} (*w)"
 				exit 0
 			elsif arg == '--debug'
-				params['debug'] == true
+				params['debug'] = true
 			else
 				raise "Bad parametr #{arg}. Use \"--help\" or \"-h\" for full list of parametrs."
 			end

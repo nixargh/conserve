@@ -1,36 +1,52 @@
 class Log
-	attr_accessor :log_file, :log_enabled, :start_time
+	attr_accessor :start_time
 	
 	def initialize()
 		@log_file = nil
 		@log_enabled = false
-		@start_time = nil
+		@start_time = nil # don't remember why i need it, hope to findout later
 		@skip_time = false
 	end
-	
-	def write(info)
+
+	def enable # start log to file instead of stdout
+		@log_enabled = true
+	end
+
+	def file # get log file
+		@log_file
+	end
+
+	def file=(log_file) # set log file
+		@log_file = log_file
+	end
+
+	def write(info=nil, color=nil) # writing colored text to output WITH "end of line"
+		colored_info = to_paint(info, color)
 		if @log_enabled == true
-			to_log(info, "\n")
+			to_log(colored_info, "\n")
 		else
-			to_stdout(info, "\n")
+			to_stdout(colored_info, "\n")
 		end
 	end
 	
-	def write_noel(info)
+	def write_noel(info=nil, color=nil) # writing colored text to output WITHOUT "end of line"
+		colored_info = to_paint(info, color)
 		if @log_enabled == true
-			to_log(info, '')
+			to_log(colored_info, '')
 			@skip_time = true
 		else
-			to_stdout(info, '')
+			to_stdout(colored_info, '')
 			$stdout.flush
 		end
 	end
 
-	def to_stdout(info,el)
+	private
+
+	def to_stdout(info, el) # printing to stdout with or without "end of line" character
 		print "#{info}#{el}"
 	end
 	
-	def to_log(info, el)
+	def to_log(info, el) # printing to file with or without "end of line" character
 		begin
 			File.open(@log_file, "a"){ |openfile|
 					@start_time = Time.now.asctime
@@ -49,14 +65,24 @@ class Log
 		end
 		result = [status, error]
 	end
+
+	def to_paint(info, color) # painting text if color defined
+		colored_info = case color
+			when nil then info
+			when 'red' then red(info)
+			when 'yellow' then yellow(info)
+			when 'green' then green(info)
+			when 'sky_blue' then sky_blue(info)
+		end
+	end
 	
-	def colorize(text, color_code)
+	def colorize(text, color_code) # add color code to start of string and static "end of color" to the end of string
 	  "#{color_code}#{text}\e[0m"
 	end
 
+	# number of color with they codes
 	def red(text); colorize(text, "\e[31m"); end
 	def green(text); colorize(text, "\e[32m"); end
 	def yellow(text); colorize(text, "\e[33m"); end
 	def sky_blue(text); colorize(text, "\e[36m"); end
-		
 end
