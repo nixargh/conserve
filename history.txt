@@ -102,6 +102,7 @@ conserve:
 			2. [BUG] Backup of files. With LVM: Trying to find /var/CommuniGate/ on ... -       Error:  *** Can't find where /dev/dm-4 mounted ***
 			3. Backup of files. Now it creates tar on destination. Need to add option to save as directory tree.
 			4. Backup of files. Set source as list of files and/or directories and backup them to separate archives.
+			5. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 			What I need to recover full system?
 				1. Hardware disks information.

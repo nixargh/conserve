@@ -1,5 +1,6 @@
 class Backup
-	attr_accessor :source, :destination, :share_type, :use_lvm, :mount_point, :credential_file, :archive, :mbr
+	attr_accessor :log, :source, :destination, :share_type, :use_lvm, :mount_point, :credential_file, :archive, :mbr
+	include Add_functions
 	
 	def initialize(source, destination)
 		@destination = destination
@@ -9,7 +10,6 @@ class Backup
 		@use_lvm = true
 		@mount_point = '/mnt'
 		@credential_file = '/root/credential'
-		@log = $log
 		@mount_dir = []
 		@archive = false
 		@lvm = nil
@@ -19,8 +19,12 @@ class Backup
 	
 	def ensure
 		@mounted.each{|share|
+			@log.write_noel("\tUnmounting #{share}. - ")
+
 			`umount #{share}`
-			@log.write("\tUnmounting #{share}. - [ #{green('OK')} ]")
+			# add test of successful umount
+
+			@log.write('[OK]', 'green')
 		}
 		@mount_dir.each{|directory|
 			Dir.unlink(directory)
@@ -30,7 +34,7 @@ class Backup
 
 	def create
 		begin
-			@log.write("")
+			@log.write
 			@log.write("Backup started - #{Time.now.asctime}")
 			destination_parse = parse_and_mount(@destination)
 			@source_is_blockdev = true if File.blockdev?(@source)
@@ -40,20 +44,23 @@ class Backup
 			
 			if File.blockdev?(source_file)
 				if @mbr == true
-					@log.write(yellow("\tBackup MBR from #{source_file} selected."))
+					@log.write("\tBackup MBR from #{source_file} selected.", 'yellow')
 					backup_mbr(source_file, destination_file)
 				else
 				# делаем образ со снепшота или просто с раздела
 					@log.write("\tSource (#{source_file}) is a block device.")
 					if @use_lvm == true
 					# делаем снепшот
-						@log.write(yellow("\tUse LVM selected by default."))
+						@log.write("\tUse LVM selected by default.", 'yellow')
 						@lvm = LVM_operate.new
+						@lvm.log = @log
+						@log.write_noel("\t\tSnapshot of #{source_file} creation - ") 
 						create_snapshot_result = @lvm.create_snapshot(source_file)
 						if create_snapshot_result[0] == 0
-							@log.write("\t\tSnapshot of #{source_file} created. - [ #{green('OK')} ]")
+							@log.write('[OK]', 'green')
 							source_file = create_snapshot_result[2]
 						else
+							@log.write('[FAILED]', 'red')
 							raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
 						end
 					end
@@ -64,14 +71,15 @@ class Backup
 				@log.write("\tSource (#{source_file}) isn't a block device.")
 				if @use_lvm == true
 				# делаем снепшот lvm
-					@log.write(yellow("\tUse LVM selected by default.")) 
+					@log.write("\tUse LVM selected by default.", 'yellow') 
 					volume = guess_file_volume(source_file)
 					if volume[0] == 0
 						@log.write("\t\tFound block device \"#{volume[2]}\" for source file(s): #{source_file}.")
 						@lvm = LVM_operate.new
+						@log.write_noel("\t\tCreating snapshot of #{volume[2]} - ")
 						create_snapshot_result = @lvm.create_snapshot(volume[2])
 						if create_snapshot_result[0] == 0
-							@log.write("\t\tSnapshot of #{volume[2]} created. - [ #{green('OK')} ]")
+							@log.write('[OK]', 'green')
 							source_vol = create_snapshot_result[2]
 							mount_result = parse_and_mount(source_vol)
 							if mount_result[0] = 0
@@ -79,15 +87,16 @@ class Backup
 								$stdout.flush								
 								source_file = mount_result[2] + source_file.gsub(where_mounted?(volume[2]), '')
 								if File.exist?(source_file)
-									@log.write("[ #{green('OK')} ]")
+									@log.write('[OK]', 'green')
 								else
-									@log.write("[ #{red('FAILED')} ]")
+									@log.write('[FAILED]', 'red')
 									raise "Can't find #{source_file}"
 								end
 							else
 								raise "Can't mount #{source_vol}: #{mount_result[1]}"
 							end
 						else
+							@log.write('[FAILED]', 'red')
 							raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
 						end
 					else
@@ -98,14 +107,14 @@ class Backup
 				@log.write_noel("\tRunning tar of #{source_file} to #{destination_file}, please wait... - ")
 				tar_result = tar_create(source_file,destination_file)
 				if tar_result[0] == 0
-					@log.write("[ #{green('OK')} ]")
+					@log.write('[OK]', 'green')
 				else
-					@log.write("[ #{red('FAILED')} ]")
+					@log.write('[FAILED]', 'red')
 					raise tar_result[1]
 				end
 			end
 		rescue
-			raise (red("\t*** ") + yellow(error = $!) + red(' ***'))
+			raise ("\t*** #{$!} ***")
 		end
 	end
 
@@ -121,9 +130,9 @@ class Backup
 			@log.write_noel("\tRunning MBR backup of #{source_device} to #{destination_file}, please wait... - ")
 			`dd if=#{source_device} of=#{destination_file} bs=512 count=1 1>/dev/null 2>/dev/null`
 			if File.exist?(destination_file)
-				@log.write("[ #{green('OK')} ]")
+				@log.write('[OK]', 'green')
 			else
-				@log.write("[ #{red('FAILED')} ]")
+				@log.write('[FAILED]', 'red')
 				raise "MBR backup destination file \"#{destination_file}\" not found"
 			end
 		else
@@ -201,11 +210,11 @@ class Backup
 				partition_size = get_device_size(partition)
 				image_size = get_image_file_size(path)
 				if partition_size == image_size
-					@log.write("[ #{green('OK')} ]")
-					@log.write_noel("\t\tSource size: #{yellow(format_size(partition_size))}; Image size: #{yellow(format_size(image_size))}")
-					archive == true ? (@log.write("; Archived image size: #{yellow(format_size(File.size?(path)))}.")) : @log.write(".")
+					@log.write('[OK]', 'green')
+					@log.write_noel("\t\tSource size: #{format_size(partition_size)}; Image size: #{format_size(image_size)}")
+					archive == true ? (@log.write("; Archived image size: #{format_size(File.size?(path))}.")) : @log.write(".")
 				else
-					@log.write("[ #{red('FAILED')} ]")
+					@log.write("[FAILED]", 'red')
 					raise "image file size not equal to partition size: #{image_size} != #{partition_size}"
 				end
 			else
@@ -329,14 +338,17 @@ class Backup
 		begin
 			status = 0
 			if mount_stat[3] != ''
-				@log.write("\t\t#{what} NOT mounted to #{mount_dir}. - [ #{red('FAILED')} ]")
+				@log.write("\t\t#{what} NOT mounted to #{mount_dir} - ")
+				@log.write("[FAILED]", 'red')
 				raise mount_stat[3]
 			elsif mount_stat[2] != '' && mount_stat[3] == ''
 				@mounted.push(mount_dir)
-				@log.write("\t\t#{what} mounted to #{mount_dir} with warnings: #{mount_stat[2]}. - [ #{green('OK')} ]")
+				@log.write_noel("\t\t#{what} mounted to #{mount_dir} with warnings: #{mount_stat[2]}. - ")
+				@log.write("[OK]", 'green')
 			else
 				@mounted.push(mount_dir)
-				@log.write("\t\t#{what} mounted to #{mount_dir}. - [ #{green('OK')} ]")
+				@log.write_noel("\t\t#{what} mounted to #{mount_dir}. - ")
+				@log.write("[OK]", 'green')
 			end
 		rescue
 			status = 1
@@ -411,7 +423,7 @@ class Backup
 	
 	def create_cred_file
 		begin
-			@log.write(yellow("\t\tCredential file \"#{@credential_file}\" not found. Let's create it..."))
+			@log.write("\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow')
 			status = 0
 			error = nil
 			print sky_blue("\t\t\tEnter username to access shared resource: ")

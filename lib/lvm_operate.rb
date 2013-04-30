@@ -1,12 +1,11 @@
 class LVM_operate
-	attr_accessor :lvm_block_size, :duplicate_warning
+	attr_accessor :log, :lvm_block_size, :duplicate_warning
 	
 	def initialize
 		@lvm_block_size = 4 # in megabytes
 		@snapshot_size_part = 80 # % from Free PE of Volume Group
 		@temp_log = '/tmp/lvcreate.log'
 		@temp_log_err = '/tmp/lvcreate_err.log'
-		@log = $log
 		@snapshots_created = []
 		@duplicate_warning = 0
 	end
@@ -22,9 +21,11 @@ class LVM_operate
 		@snapshots_created.each{|snapshot|
 			lvm_s_del = delete_snapshot(snapshot)
 			if lvm_s_del[0] == 0
-				@log.write("\t\tSnapshot of #{snapshot} deleted. - [ #{green('OK')} ]")
+				@log.write_noel("\t\tSnapshot of #{snapshot} deleted. - ")
+				@log.write('[OK]', 'green')
 			else
-				@log.write("\t\tCan't delete #{snapshot} snapshot: #{lvm_s_del}.  - [ #{red('FAILED')} ]")
+				@log.write_noel("\t\tCan't delete #{snapshot} snapshot: #{lvm_s_del}.  - ")
+				@log.write('[FIALED]', 'red')
 			end
 		}
 	end
@@ -89,12 +90,12 @@ class LVM_operate
 				error = nil
 			elsif cmd_result[3].index("give up on open_count") != nil
 				# this is to avoid SLES 11 sp.1 bug with "Unable to deact, open_count is 1" warning
-				@log.write(yellow("\t\tBuged lvremove detected. Warnings on snapshot remove."))
+				@log.write("\t\tBuged lvremove detected. Warnings on snapshot remove.", 'yellow')
 				status = 0
 				error = nil
 			elsif cmd_result[3].index("Found duplicate PV") != nil
 				# this is to avoid duplication of block device with SLES11 on Hyper-V
-				@log.write(yellow("\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.")) if @duplicate_warning == 0
+				@log.write("\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if @duplicate_warning == 0
 				status = 0
 				error = nil
 				@duplicate_warning = 1

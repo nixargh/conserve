@@ -1,4 +1,6 @@
 class Collector
+	include Add_functions
+
 	def initialize
 		# creatures list
 		hdd, md, partition, lvm, mount = Hash.new, Hash.new, Hash.new, Hash.new, Hash.new
@@ -139,23 +141,27 @@ class Collector
 	end
 
 	def read_partitions(disk) # read partitions table of disk + some of partition attributes
-		info = `sfdisk -l #{disk} -d -x`	
 		partitions = Array.new
-		info.each_line{|line|
-			if line.index('/dev/') == 0
-				partition = Hash.new
-				spl_line = line.split(',')
-				size = 0
-				spl_line.each{|arg|
-					partition['size'] = arg.split('=')[1].strip.to_i if arg.index('size=')
-					partition['id'] = arg.split('=')[1].strip if arg.index('Id=')
-					partition['name'] = name = arg.split(':')[0].strip if arg.index('/dev/')
-				}
-				if partition['size'] > 0
-					partitions.push(partition)
+		info, error = runcmd("sfdisk -l #{disk} -d -x 2>1")
+		if !error
+			info.each_line{|line|
+				if line.index('/dev/') == 0
+					partition = Hash.new
+					spl_line = line.split(',')
+					size = 0
+					spl_line.each{|arg|
+						partition['size'] = arg.split('=')[1].strip.to_i if arg.index('size=')
+						partition['id'] = arg.split('=')[1].strip if arg.index('Id=')
+						partition['name'] = name = arg.split(':')[0].strip if arg.index('/dev/')
+					}
+					if partition['size'] > 0
+						partitions.push(partition)
+					end
 				end
-			end
-		}
+			}
+		elsif error.index('GPT')
+			# stub. need to write alternative detection method for GPT partition table
+		end
 		partitions
 	end
 end

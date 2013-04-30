@@ -1,16 +1,4 @@
 class Operate
-	def initialize
-	end
-	
-	def ensure
-		@backup.ensure if @backup != nil
-		if @inform != nil
-			inform = Inform.new
-			inform.config_file = @inform
-			inform.run
-		end
-	end
-
 	def read_arguments
 		raise "Nothing will happens without parametres. Use \"--help\" or \"-h\" for full list." if ARGV == []
 		params = Hash.new
@@ -51,47 +39,6 @@ class Operate
 		params
 	end
 	
-	def action()
-		begin
-			status = 0
-			error = nil
-			$job_name = 'Default Backup Job Name' if $job_name == nil
-			if @log_enabled == true
-				$log.log_enabled = true
-				$log.log_file = @log_file
-			end
-			@backup = Backup.new(@source,@destination)
-			@backup.mbr = true if @mbr == true
-			@backup.use_lvm = false if @use_lvm == false
-			@backup.mount_point = @mountdir if @mountdir != nil
-			@backup.credential_file = @cred_file if @cred_file != nil
-			@backup.archive = true if @archive == true
-			@backup.create
-		rescue
-			status = 1
-			error = $!
-		end
-		result = [status, error]
-	end
-
-	def cmd_output(cmd)
-		begin
-			status = 0
-			error = nil
-			temp_log_err = '/tmp/conseve_cmd_err.log'
-			temp_log = '/tmp/conseve_cmd.log'
-			`#{cmd} 2>#{temp_log_err} 1>#{temp_log}`
-			cmd_error = IO.read(temp_log_err)
-			cmd_info = IO.read(temp_log)
-		rescue
-			status = 1
-			error = $!
-		ensure
-			File.unlink(temp_log_err, temp_log)
-		end
-		result = [status, error, cmd_info, cmd_error] 
-	end
-
 	private
 
 	def help()

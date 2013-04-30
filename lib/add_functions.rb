@@ -1,5 +1,5 @@
-class Add_functions
-	def s_to_a(string)
+module Add_functions
+	def s_to_a(string) # convert string to array; return array or nil if can't convert
 		if string.class == String
 			return string.split("\n")
 		elsif string.class == Array
@@ -9,7 +9,7 @@ class Add_functions
 		end
 	end
 
-	def parse_path(path)
+	def parse_path(path) # divide path to file on server part and path part etc
 		begin
 			status = 0
 			error = nil
@@ -49,7 +49,7 @@ class Add_functions
 		result = [status, error, server, directory, file]
 	end
 
-	def format_size(bytes_size)
+	def format_size(bytes_size) # convert size of file in bytes to some human readable format
 		fromated_size = nil
 		if bytes_size != nil
 			units = ['b', 'Kb', 'Mb', 'Gb', 'Tb']
@@ -62,5 +62,38 @@ class Add_functions
 			fromated_size = "#{size.round} #{units[index]}"
 		end
 		fromated_size
+	end
+
+	def cmd_output(cmd) # get information after running external utility
+		begin
+			status = 0
+			error = nil
+			temp_log_err = '/tmp/conseve_cmd_err.log'
+			temp_log = '/tmp/conseve_cmd.log'
+			`#{cmd} 2>#{temp_log_err} 1>#{temp_log}`
+			cmd_error = IO.read(temp_log_err)
+			cmd_info = IO.read(temp_log)
+		rescue
+			status = 1
+			error = $!
+		ensure
+			File.unlink(temp_log_err, temp_log)
+		end
+		result = [status, error, cmd_info, cmd_error] 
+	end
+
+	def runcmd(cmd) # NEW VERSION OF "cmd_output". Get information after running external utility
+		begin
+			temp_log_err = "/tmp/conseve_cmd_err_#{rand(100)}"
+			temp_log = "/tmp/conseve_cmd_#{rand(100)}"
+			`#{cmd} 2>#{temp_log_err} 1>#{temp_log}`
+			cmd_error = IO.read(temp_log_err)
+			cmd_info = IO.read(temp_log)
+			cmd_error = nil if cmd_error.length == 0
+			cmd_info = nil if cmd_info.length == 0
+			return cmd_info, cmd_error
+		ensure
+			File.unlink(temp_log_err, temp_log)
+		end
 	end
 end
