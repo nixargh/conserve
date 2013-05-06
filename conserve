@@ -8,14 +8,13 @@ $version = '0.2.0.4'
 require 'fileutils'
 #### CLASES ####################################################################
 class Conserve
-	attr_accessor :debug
-
 	def initialize
 		@debug = false
 		@lib_dir = '/usr/lib/conserve'
 		ENV['PATH'] = "#{ENV['PATH']}:/sbin:/usr/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin"
 		@params = nil
 		@log = nil
+		@error = nil
 	end
 
 	def run # run all that staff
@@ -27,10 +26,13 @@ class Conserve
 			start_backup!
 		rescue
 			if @log
-				@log.write_noel("\tConserve#run error: ", 'red')
-				@log.write($!, 'yellow')
-				@log.write($!.backtrace, 'sky_blue') if @debug
+				@error = $!
+				@log.write_noel("Conserve#run error: ", 'red')
+				@log.write(@error, 'yellow')
+				@log.write(@error.backtrace, 'sky_blue') if @debug
 			end
+		ensure
+			inform! if @params['inform']
 		end
 	end
 
@@ -64,7 +66,7 @@ class Conserve
 		end
 		@log = log
 		if @debug
-			@log.write_noel("\tLogging started.", 'yellow')
+			@log.write_noel("Logging started.", 'yellow')
 			@params['log_enabled'] ? @log.write(" Logging to file - #{log.file}.") : @log.write
 		end
 	end
@@ -72,11 +74,11 @@ class Conserve
 	def collect_sysinfo! # collect system information about disk, raids, partitions, lvm and mounts
 		collector = Collector.new
 		@sysinfo = collector.collect
-		@log.write("\tSysInfo collected.", 'yellow') if @debug
+		@log.write("SysInfo collected.", 'yellow') if @debug
 	end
 
 	def start_backup!
-		@log.write("\tBackup started.", 'yellow') if @debug
+		@log.write("Backup started.", 'yellow') if @debug
 		backup = Backup.new(@params['source'], @params['destination'])
 		backup.log = @log
 		backup.mbr = true if @params['mbr']
@@ -86,6 +88,45 @@ class Conserve
 		backup.archive = true if @params['archive']
 		backup.create!
 	end
+
+	def inform!
+		@log.write("Inform started.", 'yellow') if @debug
+		check_inform_gems!
+		inform = Inform.new
+		inform.log = @log
+		@params['job_name'] ? (inform.job_name = @params['job_name']) : (inform.job_name = "Conserve Backup Job")
+		inform.config_file = @params['inform']
+		inform.error = @error
+		inform.run!
+	end
+
+	def check_inform_gems!
+		@log.write("Checking ruby gems for Inform.", 'yellow') if @debug
+		ruby_gems = Ruby_gems.new
+		if !ruby_gems.check_rubygems
+			text = "\t\t\"ruby gem\" utility not installed. Inform function require it."
+			@log.write(text)
+			puts text
+			ruby_gems.install_rubygems
+		end
+		if !ruby_gems.gem_installed?('mail')
+			text = "\t\t\"mail\" ruby gem not installed. Inform function require it."
+			@log.write(text, 'red')
+			puts text
+			ruby_gems.install_mail_gem
+		end
+		if ruby_gems.check_rubygems
+			require 'rubygems'
+			if  ruby_gems.gem_installed?('mail')
+				require 'mail'
+			else
+				raise "\"mail\" ruby gem not installed"
+			end
+		else
+			raise "\"ruby gem\" utility not installed"
+		end
+	end
+
 end
 #### FUNCTIONS #################################################################
 #### PROGRAM ###################################################################
@@ -93,15 +134,13 @@ begin
 	conserve = Conserve.new
 	conserve.run
 rescue
-	puts "\t#{$!}"
-	puts $!.backtrace if conserve.debug
+	puts "Conserve: #{$!}"
+	puts $!.backtrace
 	exit 1
 end
 
 #		@backup.ensure if @backup != nil
 #		if @inform != nil
 #			inform = Inform.new
-#			inform.config_file = @inform
-#			inform.run
 #		end
 #	end

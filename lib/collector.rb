@@ -80,7 +80,7 @@ class Collector
 			vg_list = Array.new
 			backup_dir = "/tmp/vgcfgbackup"
 			backup_files = Array.new
-			Dir.mkdir(backup_dir) if !Dir.exist?(backup_dir)
+			Dir.mkdir(backup_dir) if !File.directory?(backup_dir)
 			dir = Dir.open(backup_dir)
 			`vgcfgbackup -f #{backup_dir}/%s 2>1 1>/dev/null`
 			dir.each{|file|
@@ -98,7 +98,7 @@ class Collector
 			backup_files.each{|file|
 				File.unlink(file) if File.exist?(file)
 			}
-			Dir.unlink(backup_dir) if Dir.exist?(backup_dir)
+			Dir.unlink(backup_dir) if File.directory?(backup_dir)
 		end
 	end
 

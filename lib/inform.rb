@@ -1,54 +1,45 @@
 class Inform
 	attr_accessor :config_file
+	include Add_functions
 
 	def initialize
 		@config_file = config_file #config file
 		@config = nil # configuration hash
-		@log = $log
-		@log.write("\t#{yellow("Inform function was activated.")}")
-		ruby_gems = Ruby_gems.new
-		if ruby_gems.check_rubygems == false
-			text = "#{red("\t\t\"ruby gem\" utility not installed. Inform function require it.")}"
-			@log.write(text)
-			puts text
-			ruby_gems.install_rubygems
-		end
-		if ruby_gems.gem_installed?('mail') == false
-			text = "#{red("\t\t\"mail\" ruby gem not installed. Inform function require it.")}"
-			@log.write(text)
-			puts text
-			ruby_gems.install_mail_gem
-		end
-		if ruby_gems.check_rubygems
-			require 'rubygems'
-			if  ruby_gems.gem_installed?('mail')
-				require 'mail'
-			else
-				raise "\"mail\" ruby gem not installed"
-			end
-		else
-			raise "\"ruby gem\" utility not installed"
-		end
+		@log = nil
+		@error = nil
 	end
 
-	def run
+	def error=(error)
+		@error = error
+	end
+
+	def log=(log)
+		@log=log
+	end
+
+	def job_name=(job_name)
+		@job_name = job_name
+	end
+
+	def run!
+		@log.write("\tCreating report:", 'yellow')
 		read_config
 		if @config['when_inform'] == 'all'
 			report = true
-		elsif @config['when_inform'] == 'fail' && $global_error
+		elsif @config['when_inform'] == 'fail' && @error
 			report = true
-		elsif @config['when_inform'] == 'success' && $global_error == nil
+		elsif @config['when_inform'] == 'success' && @error == nil
 			report = true
 		else
 			report = false
 		end
 		if report
-			@log.write("\t\t#{yellow("Creating report:")} method \"#{@config['method']}\".")
+			@log.write("\t\tCreating report: method \"#{@config['method']}\".", 'yellow')
 			if @config['method'] == 'email'
 				send_mail
 			end
 		else
-			@log.write("\t\t#{yellow("Nothing to report:")} report case \"#{@config['when_inform']}\" selected.")
+			@log.write("\t\tNothing to report: report case \"#{@config['when_inform']}\" selected.", 'yellow')
 		end
 	end
 		
@@ -110,7 +101,7 @@ class Inform
 	def create_body(info)
 		body = Array.new
 		last_backup = compact_log(info, 'last')
-		if $global_error
+		if @error
 			text = 'Backup Job Failed.'
 			color = 'red'
 		else
@@ -119,7 +110,7 @@ class Inform
 		end
 		body.push("<html><body bgcolor=\"#{color_schema('background')}\" text=\"#{color_schema('log_text')}\">\n<pre>\n")
 		body.push("<font size=\"12\" color=\"#{color}\" face=\"Arial\">#{text}</font>")
-		body.push("<br><font color=\"#{color_schema('main_text')}\"><pre>conserve v.#{$version} #{form_arguments_list($argv)}</pre></font><br>")
+		body.push("<br><font color=\"#{color_schema('main_text')}\"><pre>conserve v.#{$version} #{form_arguments_list(ARGV)}</pre></font><br>")
 		body.push(log_to_html(last_backup))
 		body.push("\n</pre>\n</body></html>")
 		body
@@ -144,10 +135,10 @@ class Inform
 	
 	def create_subject
 		hostname = get_hostname
-		if $global_error
-			"#{hostname}: Conserve Backup Job \"#{$job_name}\" Failed."
+		if @error
+			"#{hostname}: Conserve Backup Job \"#{@job_name}\" Failed."
 		else
-			"#{hostname}: Conserve Backup Job \"#{$job_name}\" Success."
+			"#{hostname}: Conserve Backup Job \"#{@job_name}\" Success."
 		end
 	end
 	
@@ -211,15 +202,15 @@ class Inform
 				delivery_method :smtp, options
 			end
 			
-			if @log.log_file
-				log = File.read(@log.log_file)
+			if @log.file
+				log = File.read(@log.file)
 			else
 				raise "Can't read log file, because it's not specified."
 			end
 
 			if check_potential_log_size(log) >= 2097152
 				rest_lines = 300
-				@log.write("\t\tHTML log size more than 2 Mb, compacting to #{yellow(rest_lines)} lines from the end.")
+				@log.write("\t\tHTML log size more than 2 Mb, compacting to #{rest_lines} lines from the end.")
 				log = compact_log(log, rest_lines)
 			end
 		
@@ -268,7 +259,10 @@ class Inform
 			@log.write(detail.backtrace.join("\n"))
 			error = $!
 		end
-		@log.write("\t#{red("Inform Error:")} #{yellow(error)}") if error
+		if error
+			@log.write_noel("\tInform Error: ", 'red')
+			@log.write(error, 'yellow') if error
+		end
 	end
 	
 	def get_hostname
@@ -287,56 +281,57 @@ class Inform
 			}
 		end
 		if @config
-		 	@log.write("[ #{green('OK')} ]")
+		 	@log.write("[OK]", 'green')
 		else
-			@log.write("[ #{red('FAILED')} ]")
+			@log.write("[FAILED]", 'red')
 			raise "Can't read and create Inform config: #{$!}"
 		end
 	end
 	
 	def create_config
-		@log.write("#{yellow("\t\t#{@config_file} file not found. Let's create it:")}")
+		@log.write("\t\t#{@config_file} file not found. Let's create it:", 'yellow')
 		conf_info = Hash.new
 		begin
-			print sky_blue("\t\t\tAbout which events to inform? [fail|success|all]: ")
+			@log.write("\t\t\tAbout which events to inform? [fail|success|all]: ", 'sky_blue')
 			when_inform = $stdin.gets.chomp
 		end while when_inform != 'fail' && when_inform != 'success' && when_inform != 'all'
 		conf_info['when_inform'] = when_inform
-		puts "#{sky_blue("\t\t\tSelect inform method [email]: ")} email"
+		@log.write_noel("\t\t\tSelect inform method [email]: ", 'sky_blue')
+		@log.write("email")
 		conf_info['method'] = 'email'
 		begin
-			print sky_blue("\t\t\tSelect color schema for report? [console|white]: ")
+			@log.write("\t\t\tSelect color schema for report? [console|white]: ", 'sky_blue')
 			conf_info['colors'] = $stdin.gets.chomp
 		end while conf_info['colors'] != 'console' && conf_info['colors'] != 'white'
 		begin
-			print sky_blue("\t\t\tAttach log file to report? [y|n]: ")
+			@log.write("\t\t\tAttach log file to report? [y|n]: ", 'sky_blue')
 			conf_info['attach_log'] = $stdin.gets.chomp
 		end while conf_info['attach_log'] != 'y' && conf_info['attach_log'] != 'n'
 		begin
-			print sky_blue("\t\t\tUse TLS to connect to server? [y|n]: ")
+			@log.write("\t\t\tUse TLS to connect to server? [y|n]: ", 'sky_blue')
 			conf_info['tls'] = $stdin.gets.chomp
 		end while conf_info['tls'] != 'y' && conf_info['tls'] != 'n'
 		if conf_info['method'] == 'email'
-			print sky_blue("\t\t\tSMTP server?: ")
+			@log.write("\t\t\tSMTP server?: ", 'sky_blue')
 			conf_info['smtp_server'] = $stdin.gets.chomp
 			begin
-				print sky_blue("\t\t\tAuthenticate before send? [y|n]: ")
+				@log.write("\t\t\tAuthenticate before send? [y|n]: ", 'sky_blue')
 				auth = $stdin.gets.chomp
 			end while auth != 'y' && auth != 'n'
 			conf_info['auth'] = auth
 			if conf_info['auth'] == 'y'
-				print sky_blue("\t\t\tUsername: ")
+				@log.write("\t\t\tUsername: ", 'sky_blue')
 				conf_info['smtp_user'] = $stdin.gets.chomp
-				print sky_blue("\t\t\tPassword: ")
+				@log.write("\t\t\tPassword: ", 'sky_blue')
 				system "stty -echo"
 				conf_info['smtp_pass'] = $stdin.gets.chomp
 				system "stty echo"
 			end
-			print sky_blue("\t\t\tSend mail to: ")
+			@log.write("\t\t\tSend mail to: ", 'sky_blue')
 			conf_info['mail_to'] = $stdin.gets.chomp
-			print sky_blue("\t\t\tSend copy to: ")
+			@log.write("\t\t\tSend copy to: ", 'sky_blue')
 			conf_info['copy_to'] = $stdin.gets.chomp
-			print sky_blue("\t\t\tSend mail from: ")
+			@log.write("\t\t\tSend mail from: ", 'sky_blue')
 			conf_info['mail_from'] = $stdin.gets.chomp
 		end
 		if File.directory?(File.dirname(@config_file))
