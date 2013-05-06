@@ -39,6 +39,7 @@ class Backup
 			source_parse[0] == 0 ? source_file = source_parse[2] : (raise "\"parse_and_mount\" source error: #{source_parse[1]}")
 			
 			if File.blockdev?(source_file)
+			# do block device backup
 				if @mbr == true
 					@log.write("\tBackup MBR from #{source_file} selected.", 'yellow')
 					backup_mbr(source_file, destination_file)
@@ -52,11 +53,12 @@ class Backup
 					make_image!(source_file, destination_file)
 				end					
 			else
-			# do backup files copy
+			# do files backup copy
 				@log.write("\tSource (#{source_file}) isn't a block device.")
 				if @use_lvm == true
 				# делаем снепшот lvm
-					@log.write("\tUse LVM selected by default.", 'yellow') 
+				# should use "do_snapshot" method
+					@log.write("\tUsing LVM (by default):", 'yellow') 
 					volume = guess_file_volume(source_file)
 					if volume[0] == 0
 						@log.write("\t\tFound block device \"#{volume[2]}\" for source file(s): #{source_file}.")
@@ -108,7 +110,7 @@ class Backup
 ###########
 	private
 ###########
-	def umount!(mount_point)
+	def umount!(mount_point) # unmounting mount point in verbose mode
 		@log.write_noel("\t\tUnmounting #{mount_point}. - ")
 		info, error = runcmd("umount -v #{mount_point}")
 		if info.index('unmounted') && !error
@@ -119,9 +121,9 @@ class Backup
 		end
 	end
 
-	def do_snapshot(lvm_lv) # do snapshot
+	def do_snapshot(lvm_lv) # do snapshot of LVM Logical Volume
 		lvm_lv_snapshot = nil
-		@log.write("\tUse LVM selected by default.", 'yellow')
+		@log.write("\tUsing LVM (by default):", 'yellow')
 		@lvm = LVM_operate.new
 		@lvm.log = @log
 		@log.write_noel("\t\tCreating snapshot of #{lvm_lv} - ") 
@@ -136,11 +138,11 @@ class Backup
 		lvm_lv_snapshot
 	end
 	
-	def get_device_size(device)
+	def get_device_size(device) # get size of block device
 		size = `blockdev --getsize64 #{device}`.strip.to_i
 	end
 
-	def backup_mbr(source_device, destination_file)
+	def backup_mbr(source_device, destination_file) # backups Master Boot Record of block device
 		if File.blockdev?(source_device)
 			@log.write_noel("\tRunning MBR backup of #{source_device} to #{destination_file}, please wait... - ")
 			`dd if=#{source_device} of=#{destination_file} bs=512 count=1 1>/dev/null 2>/dev/null`
@@ -155,7 +157,7 @@ class Backup
 		end
 	end
 
-	def parse_and_mount(path)
+	def parse_and_mount(path) # split path from --soure and -destination arguments to server and path parts
 		begin
 			status = 0
 			error = nil
@@ -186,7 +188,7 @@ class Backup
 		result = [status, error, file]
 	end
 
-	def get_image_file_size(file)
+	def get_image_file_size(file) # get size of created image file (and inside gzip archive)
 		image_size = nil
 		if File.extname(file) == '.gz'
 			begin
@@ -208,7 +210,7 @@ class Backup
 		image_size # size in bytes
 	end
 	
-	def make_image!(partition, path)
+	def make_image!(partition, path) # creates and checks image of some partition or HDD
 		begin
 			@log.write("\tImage creation:", 'yellow')
 			info = create_image(partition, path)
@@ -224,16 +226,16 @@ class Backup
 		end
 	end
 
-	def create_image(partition, path)
+	def create_image(partition, path) # creates image of partition or HDD
 		begin
 			@log.write_noel("\t\tCreating image of #{partition} - ")
 			block_size = @lvm.lvm_block_size
 			dd_log = "/tmp/dd_#{rand(100)}.log"
-			if archive == false
-				`dd if=#{partition} of=#{path} bs=#{block_size}M 2>#{dd_log}`
-			else
+			if @archive
 				path = "#{path}.gz"
 				`dd if=#{partition} bs=#{block_size}M 2>#{dd_log} | gzip > #{path}`
+			else
+				`dd if=#{partition} of=#{path} bs=#{block_size}M 2>#{dd_log}`
 			end
 			return IO.read(dd_log)
 		rescue
@@ -243,8 +245,9 @@ class Backup
 		end
 	end
 
-	def check_image!(partition, path)
+	def check_image!(partition, path) # checks that image was create successfully
 		begin
+			path = "#{path}.gz" if @archive
 			@log.write_noel("\t\tChecking image (#{path}) of #{partition} - ")
 			size = nil
 			partition_size = get_device_size(partition)
@@ -252,7 +255,7 @@ class Backup
 			if partition_size == image_size
 				@log.write('[OK]', 'green')
 				@log.write_noel("\t\tSource size: #{format_size(partition_size)}; Image size: #{format_size(image_size)}")
-				archive == true ? (@log.write("; Archived image size: #{format_size(File.size?(path))}.")) : @log.write(".")
+				@archive ? (@log.write("; Archived image size: #{format_size(File.size?(path))}.")) : @log.write(".")
 			else
 				raise "image file size not equal to partition size: #{image_size} != #{partition_size}"
 			end
@@ -262,7 +265,7 @@ class Backup
 		end
 	end
 	
-	def guess_file_volume(file)
+	def guess_file_volume(file) # detect partition where file stored
 		begin
 			status = 0
 			volume = nil
@@ -296,7 +299,7 @@ class Backup
 		result = [status, error, volume]
 	end
 	
-	def create_random_dir(where)
+	def create_random_dir(where) # creates random directories inside directory specified at --where argument
 		# создаёт директорию куда монтировать в той что указана в where (т.е. корневая)
 		# удаляется в функции ensure
 		begin
@@ -333,7 +336,7 @@ class Backup
 		result = [status, error, path]
 	end	
 
-	def mount_smb(what, where, type)
+	def mount_smb(what, where, type) # mounts smb or cifs share
 		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if File.exist?(`which 'mount.cifs'`.chomp) == false
 		@log.write("\tMounting SMB share...")
 		server = (what.split("/"))[2]
