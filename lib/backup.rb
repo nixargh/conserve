@@ -17,22 +17,18 @@ class Backup
 		@mbr = nil
 	end
 	
-	def ensure
+	def clean!
+		@log.write("\tCleaning after Backup:", 'yellow')
 		@mounted.each{|share|
-			@log.write_noel("\tUnmounting #{share}. - ")
-
-			`umount #{share}`
-			# add test of successful umount
-
-			@log.write('[OK]', 'green')
+			umount!(share)
 		}
 		@mount_dir.each{|directory|
 			Dir.unlink(directory)
 		}
-		@lvm.ensure if @lvm
+		@lvm.clean! if @lvm
 	end
 
-	def create
+	def create!
 		begin
 			@log.write
 			@log.write("Backup started - #{Time.now.asctime}")
@@ -47,27 +43,16 @@ class Backup
 					@log.write("\tBackup MBR from #{source_file} selected.", 'yellow')
 					backup_mbr(source_file, destination_file)
 				else
-				# делаем образ со снепшота или просто с раздела
+				# do image of snapshot or raw partition
 					@log.write("\tSource (#{source_file}) is a block device.")
 					if @use_lvm == true
-					# делаем снепшот
-						@log.write("\tUse LVM selected by default.", 'yellow')
-						@lvm = LVM_operate.new
-						@lvm.log = @log
-						@log.write_noel("\t\tSnapshot of #{source_file} creation - ") 
-						create_snapshot_result = @lvm.create_snapshot(source_file)
-						if create_snapshot_result[0] == 0
-							@log.write('[OK]', 'green')
-							source_file = create_snapshot_result[2]
-						else
-							@log.write('[FAILED]', 'red')
-							raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
-						end
+						# do snapshot
+						source_file = do_snapshot(source_file)
 					end
-					make_image(source_file, destination_file)
+					make_image!(source_file, destination_file)
 				end					
 			else
-			# бэкап копированием
+			# do backup files copy
 				@log.write("\tSource (#{source_file}) isn't a block device.")
 				if @use_lvm == true
 				# делаем снепшот lvm
@@ -103,7 +88,7 @@ class Backup
 						raise "Can't find block device for file #{source_file}."
 					end		
 				end	
-				# тарим и сжимаем если требуется
+				# do tar and gzip if needed
 				@log.write_noel("\tRunning tar of #{source_file} to #{destination_file}, please wait... - ")
 				tar_result = tar_create(source_file,destination_file)
 				if tar_result[0] == 0
@@ -114,13 +99,43 @@ class Backup
 				end
 			end
 		rescue
-			raise ("\t*** #{$!} ***")
+			raise $!
+		ensure
+			clean!
 		end
 	end
 
 ###########
 	private
 ###########
+	def umount!(mount_point)
+		@log.write_noel("\t\tUnmounting #{mount_point}. - ")
+		info, error = runcmd("umount -v #{mount_point}")
+		if info.index('unmounted') && !error
+			@log.write('[OK]', 'green')
+		else
+			@log.write('[FAILED}', 'red')
+			@log.write("\t\t\t#{error}", 'yellow')
+		end
+	end
+
+	def do_snapshot(lvm_lv) # do snapshot
+		lvm_lv_snapshot = nil
+		@log.write("\tUse LVM selected by default.", 'yellow')
+		@lvm = LVM_operate.new
+		@lvm.log = @log
+		@log.write_noel("\t\tCreating snapshot of #{lvm_lv} - ") 
+		create_snapshot_result = @lvm.create_snapshot(lvm_lv)
+		if create_snapshot_result[0] == 0
+			@log.write('[OK]', 'green')
+			lvm_lv_snapshot = create_snapshot_result[2]
+		else
+			@log.write('[FAILED]', 'red')
+			raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
+		end
+		lvm_lv_snapshot
+	end
+	
 	def get_device_size(device)
 		size = `blockdev --getsize64 #{device}`.strip.to_i
 	end
@@ -172,11 +187,11 @@ class Backup
 	end
 
 	def get_image_file_size(file)
-		begin
-			image_size = nil
-			if File.extname(file) == '.gz'
+		image_size = nil
+		if File.extname(file) == '.gz'
+			begin
 				#puts "\t\tDetermining the size of image file archived in #{file},\n\t\tit can take anywhere from 5 minutes to an hour, depending on the size of the original image."
-				zcat_log = '/tmp/zcat.log'
+				zcat_log = "/tmp/zcat_#{rand(100)}.log"
 				image_size = `zcat #{file} 2>#{zcat_log} |wc -c`
 				zcat_error = IO.read(zcat_log)
 				if !zcat_error.empty?
@@ -184,44 +199,66 @@ class Backup
 					raise "\"#{file}\" archive was corrupted"
 				end
 				image_size = image_size.chomp.to_i
-			else
-				image_size = File.size?(file)
+			ensure
+				File.unlink(zcat_log)
 			end
-			image_size # size in bytes
-		ensure
-			File.unlink(zcat_log)
+		else
+			image_size = File.size?(file)
 		end
+		image_size # size in bytes
 	end
 	
-	def make_image(partition, path)
+	def make_image!(partition, path)
 		begin
-			@log.write_noel("\tRunning image creation of #{partition}, please wait... - ")
-			size = nil
-			@lvm ? (block_size = @lvm.lvm_block_size) : (block_size = 4)
-			dd_log = '/tmp/dd.log'
+			@log.write("\tImage creation:", 'yellow')
+			info = create_image(partition, path)
+			if info && info.index("copied")
+				@log.write('[OK]', 'green')
+				check_image!(partition, path)
+			else
+				info ? (raise info) : (raise "No image creation info was returned.")
+			end
+		rescue
+			#@log.write("[FAILED]", 'red')
+			raise "Image creation failed: #{$!}."
+		end
+	end
+
+	def create_image(partition, path)
+		begin
+			@log.write_noel("\t\tCreating image of #{partition} - ")
+			block_size = @lvm.lvm_block_size
+			dd_log = "/tmp/dd_#{rand(100)}.log"
 			if archive == false
 				`dd if=#{partition} of=#{path} bs=#{block_size}M 2>#{dd_log}`
 			else
 				path = "#{path}.gz"
 				`dd if=#{partition} bs=#{block_size}M 2>#{dd_log} | gzip > #{path}`
 			end
-			info = IO.read(dd_log)
-			if info.index("copied")
-				partition_size = get_device_size(partition)
-				image_size = get_image_file_size(path)
-				if partition_size == image_size
-					@log.write('[OK]', 'green')
-					@log.write_noel("\t\tSource size: #{format_size(partition_size)}; Image size: #{format_size(image_size)}")
-					archive == true ? (@log.write("; Archived image size: #{format_size(File.size?(path))}.")) : @log.write(".")
-				else
-					@log.write("[FAILED]", 'red')
-					raise "image file size not equal to partition size: #{image_size} != #{partition_size}"
-				end
-			else
-				raise info
-			end
+			return IO.read(dd_log)
+		rescue
+			return nil
 		ensure
 			File.unlink(dd_log)
+		end
+	end
+
+	def check_image!(partition, path)
+		begin
+			@log.write_noel("\t\tChecking image (#{path}) of #{partition} - ")
+			size = nil
+			partition_size = get_device_size(partition)
+			image_size = get_image_file_size(path)
+			if partition_size == image_size
+				@log.write('[OK]', 'green')
+				@log.write_noel("\t\tSource size: #{format_size(partition_size)}; Image size: #{format_size(image_size)}")
+				archive == true ? (@log.write("; Archived image size: #{format_size(File.size?(path))}.")) : @log.write(".")
+			else
+				raise "image file size not equal to partition size: #{image_size} != #{partition_size}"
+			end
+		rescue
+			@log.write("[FAILED]", 'red')
+			raise "Image check failed: #{$!.backtrace}."
 		end
 	end
 	

@@ -92,6 +92,8 @@ module Add_functions
 			cmd_error = nil if cmd_error.length == 0
 			cmd_info = nil if cmd_info.length == 0
 			return cmd_info, cmd_error
+		rescue
+			raise "runcmd: #{$!}"
 		ensure
 			File.unlink(temp_log_err, temp_log)
 		end

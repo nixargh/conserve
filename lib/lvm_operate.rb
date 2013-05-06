@@ -1,5 +1,6 @@
 class LVM_operate
 	attr_accessor :log, :lvm_block_size, :duplicate_warning
+	include Add_functions
 	
 	def initialize
 		@lvm_block_size = 4 # in megabytes
@@ -12,20 +13,20 @@ class LVM_operate
 	
 	def get_volume_group(volume)
 		action = "lvdisplay -c #{volume}"
-		info = do_it(action)[2]
+		info = do_it(action)[0]
 		lvm_group = info.split(':')[1]
 	end
 	
-	def ensure
-		sleep 3
+	def clean!
+		sleep 1
 		@snapshots_created.each{|snapshot|
-			lvm_s_del = delete_snapshot(snapshot)
-			if lvm_s_del[0] == 0
-				@log.write_noel("\t\tSnapshot of #{snapshot} deleted. - ")
+			info, error = delete_snapshot(snapshot)
+			if info
+				@log.write_noel("\t\tDeleting snapshot of #{snapshot} - ")
 				@log.write('[OK]', 'green')
 			else
-				@log.write_noel("\t\tCan't delete #{snapshot} snapshot: #{lvm_s_del}.  - ")
-				@log.write('[FIALED]', 'red')
+				@log.write_noel("\t\tCan't delete #{snapshot} snapshot: #{error}.  - ")
+				@log.write('[FAILED]', 'red')
 			end
 		}
 	end
@@ -39,7 +40,7 @@ class LVM_operate
 			action = "lvcreate -l#{snapshot_size} -s -n #{snapshot} #{volume}"
 			action_result = do_it(action)
 			snapshot = File.dirname(volume) + "\/" + snapshot
-			if action_result[0] == 0
+			if action_result[0]
 				@snapshots_created.push(snapshot)
 				raise "Could not find snapshot: #{snapshot}. Maybe it's not created." if File.exist?(snapshot) == false
 			else
@@ -60,7 +61,8 @@ class LVM_operate
 	def get_size(device)
 		action = "lvdisplay #{device}"
 		size = nil
-		info = do_it(action)[2]
+		info = do_it(action)[0]
+		puts info
 		(info.split("\n")).each{|line|
 			size = line.split('Current LE')[1].lstrip! if line.index('Current LE')
 		}
@@ -72,43 +74,41 @@ class LVM_operate
 ###########
 	def find_space_for_snapshot(lvm_group)
 		action = "vgdisplay -c #{lvm_group}"
-		info = do_it(action)[2]
+		info = do_it(action)[0]
 		info = info.split(':')
 		free_pe = (info[info.length - 2]).to_i # space in PE
 	end
 	
 	def do_it(action)
+		info, error = nil, nil
 		begin
-			cmd_result = $operate.cmd_output(action)
-			#`#{action} 2>#{@temp_log_err} 1>#{@temp_log}`
-			#lv_error = IO.read(@temp_log_err)
-			#lv_info = IO.read(@temp_log)
-			raise "Can't get output of \"#{action}\": #{cmd_result[1]}" if cmd_result[0] != 0
-			if cmd_result[3] == ''
+			info, error = runcmd(action)
+#			puts
+#			puts "action: #{action}"
+#			puts "info: #{info}"
+#			puts "error: #{error}"
+
+			if !error
 			# second part to avoid SLES 11 sp.1 bug with "Unable to deact, open_count is 1" warning
-				status = 0
 				error = nil
-			elsif cmd_result[3].index("give up on open_count") != nil
+			elsif error.index("give up on open_count")
 				# this is to avoid SLES 11 sp.1 bug with "Unable to deact, open_count is 1" warning
 				@log.write("\t\tBuged lvremove detected. Warnings on snapshot remove.", 'yellow')
-				status = 0
 				error = nil
-			elsif cmd_result[3].index("Found duplicate PV") != nil
+			elsif error.index("Found duplicate PV")
 				# this is to avoid duplication of block device with SLES11 on Hyper-V
 				@log.write("\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if @duplicate_warning == 0
-				status = 0
 				error = nil
 				@duplicate_warning = 1
 			else
-				raise cmd_result[3]
+				raise error
 			end
 		rescue
-			status = 1
+			info = nil
 			error = $!
-		ensure
-			#File.unlink(@temp_log)
-			#File.unlink(@temp_log_err)
 		end
-		result = [status, error, cmd_result[2]]
+#		puts "return info: #{info}"
+#		puts "return error: #{error}"
+		return info, error
 	end
 end
