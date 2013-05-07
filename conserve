@@ -138,9 +138,3 @@ rescue
 	puts $!.backtrace
 	exit 1
 end
-
-#		@backup.ensure if @backup != nil
-#		if @inform != nil
-#			inform = Inform.new
-#		end
-#	end

@@ -5,8 +5,6 @@ class LVM_operate
 	def initialize
 		@lvm_block_size = 4 # in megabytes
 		@snapshot_size_part = 80 # % from Free PE of Volume Group
-		@temp_log = '/tmp/lvcreate.log'
-		@temp_log_err = '/tmp/lvcreate_err.log'
 		@snapshots_created = []
 		@duplicate_warning = 0
 	end
@@ -18,7 +16,7 @@ class LVM_operate
 	end
 	
 	def clean!
-		sleep 1
+		sleep 2
 		@snapshots_created.each{|snapshot|
 			info, error = delete_snapshot(snapshot)
 			if info
@@ -34,23 +32,34 @@ class LVM_operate
 	def create_snapshot(volume)
 		begin
 			status = 0
+			volume = convert_to_non_mapper(volume) if volume.index("mapper")
 			snapshot = "#{File.basename(volume)}_backup"
 			snapshot_size = find_space_for_snapshot(get_volume_group(volume)) * @snapshot_size_part
 			snapshot_size = snapshot_size/100
 			action = "lvcreate -l#{snapshot_size} -s -n #{snapshot} #{volume}"
-			action_result = do_it(action)
+			info, error = do_it(action)
 			snapshot = File.dirname(volume) + "\/" + snapshot
-			if action_result[0]
-				@snapshots_created.push(snapshot)
-				raise "Could not find snapshot: #{snapshot}. Maybe it's not created." if File.exist?(snapshot) == false
+			if error
+				raise error
 			else
-				raise action_result[1]
+				@snapshots_created.push(snapshot)
+				raise "Could not find snapshot: #{snapshot}. Maybe it's not created." if !File.exist?(snapshot)
 			end
 		rescue
 			status = 1
 			error = $!
 		end
 		result = [status, error, snapshot]
+	end
+	
+	def convert_to_non_mapper(device)
+		lg, lv = File.basename(device).split('-')
+		device = "/dev/#{lg}/#{lv}"
+		if File.blockdev?(device)
+			return device
+		else
+			raise "Can't convert #{device} to non_mapper"
+		end
 	end
 
 	def delete_snapshot(device)

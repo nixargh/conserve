@@ -56,49 +56,20 @@ class Backup
 			# do files backup copy
 				@log.write("\tSource (#{source_file}) isn't a block device.")
 				if @use_lvm == true
-				# делаем снепшот lvm
-				# should use "do_snapshot" method
-					@log.write("\tUsing LVM (by default):", 'yellow') 
-					volume = guess_file_volume(source_file)
-					if volume[0] == 0
-						@log.write("\t\tFound block device \"#{volume[2]}\" for source file(s): #{source_file}.")
-						@lvm = LVM_operate.new
-						@log.write_noel("\t\tCreating snapshot of #{volume[2]} - ")
-						create_snapshot_result = @lvm.create_snapshot(volume[2])
-						if create_snapshot_result[0] == 0
-							@log.write('[OK]', 'green')
-							source_vol = create_snapshot_result[2]
-							mount_result = parse_and_mount(source_vol)
-							if mount_result[0] = 0
-								@log.write_noel("\t\t\tTrying to find #{source_file} on #{mount_result[2]}... - ")
-								$stdout.flush								
-								source_file = mount_result[2] + source_file.gsub(where_mounted?(volume[2]), '')
-								if File.exist?(source_file)
-									@log.write('[OK]', 'green')
-								else
-									@log.write('[FAILED]', 'red')
-									raise "Can't find #{source_file}"
-								end
-							else
-								raise "Can't mount #{source_vol}: #{mount_result[1]}"
-							end
-						else
-							@log.write('[FAILED]', 'red')
-							raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
-						end
+					device, mount_point = guess_file_volume(source_file)
+					@log.write("\t\tFound block device \"#{device}\" for source file(s): #{source_file}.")
+					device = do_snapshot(device)
+					new_mount_point = parse_and_mount(device)[2]
+					if (new_source_file = find_symlink(source_file))
+						source_file = new_source_file
+					end
+					if mount_point == '/'
+						source_file = "#{new_mount_point}#{source_file}"
 					else
-						raise "Can't find block device for file #{source_file}."
-					end		
+						source_file.gsub!(/\A#{mount_point}/, new_mount_point)
+					end
 				end	
-				# do tar and gzip if needed
-				@log.write_noel("\tRunning tar of #{source_file} to #{destination_file}, please wait... - ")
-				tar_result = tar_create(source_file,destination_file)
-				if tar_result[0] == 0
-					@log.write('[OK]', 'green')
-				else
-					@log.write('[FAILED]', 'red')
-					raise tar_result[1]
-				end
+				create_archive!(source_file, destination_file)
 			end
 		rescue
 			raise $!
@@ -110,6 +81,19 @@ class Backup
 ###########
 	private
 ###########
+	def find_symlink(file)
+		path = String.new
+		symlink = nil
+		file.split('/').each{|part|
+			if !part.empty?
+				path = "#{path}/#{part}"
+				symlink = "#{symlink}/#{part}" if symlink
+				symlink = File.readlink(path) if File.symlink?(path)
+			end
+		}
+		symlink
+	end
+
 	def umount!(mount_point) # unmounting mount point in verbose mode
 		@log.write_noel("\t\tUnmounting #{mount_point}. - ")
 		info, error = runcmd("umount -v #{mount_point}")
@@ -157,35 +141,71 @@ class Backup
 		end
 	end
 
-	def parse_and_mount(path) # split path from --soure and -destination arguments to server and path parts
+	def parse_and_mount(path) # return right file path
 		begin
+			raise "path is \"nil\"" if !path
 			status = 0
 			error = nil
-			path = parse_path(path)
-			raise "Path error: #{path[1]}" if path[0] == false
-			if path[2] # есть в пути имя сервера
-				path_new = "//#{path[2]}#{path[3]}"
-				mount_result = mount(path_new, @mount_point, 'smb')
-				file = "#{mount_result[2]}/#{path[4]}"
-				raise "#{file} is a directory. You need to point destination file (-d) not a directory" if File.directory?(file)
-			elsif File.blockdev?("#{path[3]}/#{path[4]}") && check_mounted("#{path[3]}/#{path[4]}")[0] == 1 && @source_is_blockdev == false
-			# блоковое устройство и не примаунчено + изначально как --source выбиралось не блоковое устройство
-				path_new = "#{path[3]}/#{path[4]}"
-				mount_result = mount(path_new, @mount_point, 'local')
-				file = mount_result[2]
-			else # нет в пути имени сервера
-				mount_result = [0,nil]
-				file = "#{path[3]}/#{path[4]}"
+#			path = parse_path(path)
+			server, directory, file = parse_path(path)
+#			raise "Path error: #{path[1]}" if !path[0]
+			if server
+			# server name or ip found on path argument
+				remote_directory = "//#{server}#{directory}"
+				mount_point = mount(remote_directory, @mount_point, 'smb')
+				new_file = "#{mount_point}/#{file}"
+				raise "#{new_file} is a directory. You need to point destination file (-d) not a directory" if File.directory?(new_file)
+			else
+				if File.blockdev?("#{directory}/#{file}") && check_mounted("#{directory}/#{file}")[0] == 1 && !@source_is_blockdev
+						# block device not mounted and --source wasn't block device
+						device = "#{directory}/#{file}"
+						new_file = mount(device, @mount_point, 'local')
+				else
+					mount_result = [0, nil]
+					new_file = "#{directory}/#{file}"
+				end
 			end
-			# Тут бы нужно проверять наличие файла или папки...
-			# raise "Can't find file \"#{file}\"" if File.exist?(file) == false
-			raise "Can't mount device or network share: #{mount_result[1]}" if mount_result[0] != 0
-			rescue
+			#raise "Can't mount device or network share: #{mount_result[1]}" if mount_result[0] != 0
+		rescue
 			status = 1
 			error = $!
 		end
 		@source_is_blockdev = false
-		result = [status, error, file]
+		result = [status, error, new_file]
+	end
+
+	def parse_path(path) # divide path to file on server part and path part etc
+		server, directory, file = nil, nil, nil
+		path.gsub!('\\', '/')
+		if path.index('|')
+			path = path.split('|')
+			server = path[0]
+			file = File.basename(path[1])
+			directory = File.dirname(path[1])
+		else
+			if File.directory?(path)
+				directory = path
+			elsif File.directory?(File.dirname(path))
+				directory = File.dirname(path)
+				file = File.basename(path)
+			else
+				raise "path \"#{path}\" not found."
+			end
+#			file = File.basename(path)
+#			if File.directory?(path)
+#				directory = path
+#				file = nil
+#			elsif File.directory?(file)
+#				directory = "#{File.dirname(path)}/#{file}"
+#			else
+#				directory = File.dirname(path)
+#			end
+#			if File.exist?(directory) && File.directory?(directory)
+#			else
+#				raise "Can't find directory - #{directory}"
+#			end
+		end
+		return server, directory, file
 	end
 
 	def get_image_file_size(file) # get size of created image file (and inside gzip archive)
@@ -266,42 +286,16 @@ class Backup
 	end
 	
 	def guess_file_volume(file) # detect partition where file stored
-		begin
-			status = 0
-			volume = nil
-			file_path = parse_path(file)
-			if file_path[0] == 0
-				mount_list = IO.read('/etc/mtab')
-				mount_list.each_line{|line|
-					line = line.split(' ')
-					#puts "#{line[0]} - #{line[1]}"
-					#puts file_path[3].index(line[1])
-					if file_path[3].index(line[1]) && line[1] != '/'
-						volume = line[0]
-					elsif file_path[3].index(line[1]) && line[1] == '/' && volume == nil
-
-						volume = line[0]
-					end
-				}
-				if volume.index('/dev/mapper/')
-					group_volume = (volume.split('/')).last
-					volume = group_volume[group_volume.index(/[^-]-[^-]/)+2..group_volume.length]
-					group = group_volume[0..group_volume.index(/[^-]-[^-]/)].gsub('--','-')
-					volume = "/dev/#{group}/#{volume}"
-				end
-			else
-				raise file_path[1]
-			end
-		rescue
-			status = 1
-			error = $!
-		end
-		result = [status, error, volume]
+		raise "file #{file} not found" if !File.exist?(file)
+		info, error = runcmd("df -T \"#{file}\"")
+		raise error if error
+		info = s_to_a(info)
+		raise "more than 1 file found: #{info}" if info.length > 2
+		device, a, b, c, d, e, mount_point = info[1].split(' ')
+		return device, mount_point
 	end
 	
 	def create_random_dir(where) # creates random directories inside directory specified at --where argument
-		# создаёт директорию куда монтировать в той что указана в where (т.е. корневая)
-		# удаляется в функции ensure
 		begin
 			status = 0
 			mount_dir = "#{where}/bak#{rand(1000000)}"
@@ -315,30 +309,23 @@ class Backup
 	end
 	
 	def mount(what, where, type)
-		begin
-			status = 0
-			path = nil
-			if File.directory?(where)
-				if type == 'smb'
-					path = mount_smb(what, where, type)
-				elsif type == 'local'
-					psth = mount_local(what, where, type)
-				else
-					raise "Can't work with that mount type: #{type}"
-				end
+		if File.directory?(where)
+			if type == 'smb'
+				path = mount_smb(what, where, type)
+			elsif type == 'local'
+				path = mount_local(what, where, type)
 			else
-				raise "root mount directory \"#{where}\" not found or not a directory"
+				raise "Can't work with that mount type: #{type}"
 			end
-		rescue
-			status = 1
-			error = $!
+		else
+			raise "root mount directory \"#{where}\" not found or not a directory"
 		end
-		result = [status, error, path]
+		path
 	end	
 
 	def mount_smb(what, where, type) # mounts smb or cifs share
-		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if File.exist?(`which 'mount.cifs'`.chomp) == false
-		@log.write("\tMounting SMB share...")
+		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if !File.exist?(`which 'mount.cifs'`.chomp)
+		@log.write("\tMounting SMB share: ")
 		server = (what.split("/"))[2]
 		if check_online(server)[0] == 0
 			random_dir = create_random_dir(where)
@@ -365,10 +352,10 @@ class Backup
 	end
 
 	def mount_local(what, where, type)
-		@log.write("\tMounting local disk...")
+		@log.write_noel("\tMounting local disk: ",)
 		random_dir = create_random_dir(where)
 		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
-		mount_stat = $operate.cmd_output("mount #{what} #{mount_dir}")
+		mount_stat = runcmd("mount #{what} #{mount_dir}")
 		mount_check = check_mount_stat(mount_stat, what, mount_dir)
 		mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
 		path
@@ -376,18 +363,19 @@ class Backup
 	
 	def check_mount_stat(mount_stat, what, mount_dir)
 		begin
+			info, error = mount_stat
 			status = 0
-			if mount_stat[3] != ''
-				@log.write("\t\t#{what} NOT mounted to #{mount_dir} - ")
+			if error
+				@log.write("#{what} NOT mounted to #{mount_dir} - ")
 				@log.write("[FAILED]", 'red')
-				raise mount_stat[3]
-			elsif mount_stat[2] != '' && mount_stat[3] == ''
+				raise error
+			elsif info && !error
 				@mounted.push(mount_dir)
-				@log.write_noel("\t\t#{what} mounted to #{mount_dir} with warnings: #{mount_stat[2]}. - ")
+				@log.write_noel("#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
 				@log.write("[OK]", 'green')
 			else
 				@mounted.push(mount_dir)
-				@log.write_noel("\t\t#{what} mounted to #{mount_dir}. - ")
+				@log.write_noel("#{what} mounted to #{mount_dir}. - ")
 				@log.write("[OK]", 'green')
 			end
 		rescue
@@ -440,7 +428,7 @@ class Backup
 					end
 				end	
 			}
-			raise "#{device} not mounted" if mounted != true
+			raise "#{device} not mounted" if !mounted
 		rescue
 			status = 1
 			error = $!
@@ -463,12 +451,12 @@ class Backup
 	
 	def create_cred_file
 		begin
-			@log.write("\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow')
+			@log.write("\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow', true)
 			status = 0
 			error = nil
-			print sky_blue("\t\t\tEnter username to access shared resource: ")
+			@log.write("\t\t\tEnter username to access shared resource: ", 'sky_blue', true)
 			username = $stdin.gets.chomp
-			print sky_blue("\t\t\tEnter password: ")
+			@log.write("\t\t\tEnter password: ", 'sky_blue', true)
 			system "stty -echo"
 			password = $stdin.gets.chomp
 			system "stty echo"
@@ -489,40 +477,31 @@ class Backup
 		result = [status, error]
 	end
 
-	def tar_create(what, where)
+	def create_archive!(source_file, destination_file) # do tar and gzip if needed
 		begin
-			tar_log = '/tmp/tar.log'
-			tar_error_log = '/tmp/tar_err.log'
-			if @archive == true
-				`tar -czf #{where}.tar.gz #{what} 1>#{tar_log} 2>#{tar_error_log}`
-				ext = '.tar.gz'
+			if @archive
+				destination_file = "#{destination_file}.tar.gz"
+				arc_arg = 'z'
 			else
-				`tar -cf #{where}.tar #{what} 1>#{tar_log} 2>#{tar_error_log}`
-				ext = '.tar'
+				destination_file = "#{destination_file}.tar"
+				arc_arg = nil
 			end
-			info = IO.read(tar_log)
-			error_s = IO.read(tar_error_log)
-			error_a = []
-			error_s.each_line{|line|
+			@log.write_noel("\tRunning tar#{ arc_arg ? ' and gzip' : ''} of #{source_file} to #{destination_file} - ")
+			cmd = "tar -c#{arc_arg}f \"#{destination_file}\" \"#{source_file}\""
+			info, error = runcmd(cmd)
+			
+			error_a = Array.new
+			error.each_line{|line|
 				line.chomp!
-				if line.index("tar: Removing leading `/\' from") == nil
+				if !line.index("tar: Removing leading `/\' from")
 					error_a.push(line)
 				end
 			}
-			if error_a != [] && File.exist?("#{where}#{ext}")
-			# тут бы конечно покрасивее сделать, а то по ошибке не будет ничего понятно толком
-				raise "tar error: #{error_a}"
-			else
-				status = 0
-				error = nil
-			end
+			raise "tar created with error(s): #{error_a}" if !error_a.empty? && File.exist?(destination_file)
+			@log.write('[OK]', 'green')
 		rescue
-			status = 1
-			error = $!
-		ensure
-			File.unlink(tar_log, tar_error_log)
+			@log.write('[FAILED]', 'red')
+			raise "tar creation failed: #{$!}."
 		end
-		result = [status, error, info]
 	end
-
 end

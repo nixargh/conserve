@@ -46,6 +46,7 @@ class Inform
 ###########
 	private
 ###########
+
 	def color_schema(item)
 		@config['colors'] = 'console' if !@config['colors']
 		if @config['colors'] == 'console'
@@ -289,49 +290,49 @@ class Inform
 	end
 	
 	def create_config
-		@log.write("\t\t#{@config_file} file not found. Let's create it:", 'yellow')
+		@log.write("\t\t#{@config_file} file not found. Let's create it:", 'yellow', true)
 		conf_info = Hash.new
 		begin
-			@log.write("\t\t\tAbout which events to inform? [fail|success|all]: ", 'sky_blue')
+			@log.write_noel("\t\t\tAbout which events to inform? [fail|success|all]: ", 'sky_blue', true)
 			when_inform = $stdin.gets.chomp
 		end while when_inform != 'fail' && when_inform != 'success' && when_inform != 'all'
 		conf_info['when_inform'] = when_inform
-		@log.write_noel("\t\t\tSelect inform method [email]: ", 'sky_blue')
-		@log.write("email")
+		@log.write_noel("\t\t\tSelect inform method [email]: ", 'sky_blue', true)
+		@log.write("email", nil, true)
 		conf_info['method'] = 'email'
 		begin
-			@log.write("\t\t\tSelect color schema for report? [console|white]: ", 'sky_blue')
+			@log.write_noel("\t\t\tSelect color schema for report? [console|white]: ", 'sky_blue', true)
 			conf_info['colors'] = $stdin.gets.chomp
 		end while conf_info['colors'] != 'console' && conf_info['colors'] != 'white'
 		begin
-			@log.write("\t\t\tAttach log file to report? [y|n]: ", 'sky_blue')
+			@log.write_noel("\t\t\tAttach log file to report? [y|n]: ", 'sky_blue', true)
 			conf_info['attach_log'] = $stdin.gets.chomp
 		end while conf_info['attach_log'] != 'y' && conf_info['attach_log'] != 'n'
 		begin
-			@log.write("\t\t\tUse TLS to connect to server? [y|n]: ", 'sky_blue')
+			@log.write_noel("\t\t\tUse TLS to connect to server? [y|n]: ", 'sky_blue', true)
 			conf_info['tls'] = $stdin.gets.chomp
 		end while conf_info['tls'] != 'y' && conf_info['tls'] != 'n'
 		if conf_info['method'] == 'email'
-			@log.write("\t\t\tSMTP server?: ", 'sky_blue')
+			@log.write_noel("\t\t\tSMTP server?: ", 'sky_blue', true)
 			conf_info['smtp_server'] = $stdin.gets.chomp
 			begin
-				@log.write("\t\t\tAuthenticate before send? [y|n]: ", 'sky_blue')
+				@log.write_noel("\t\t\tAuthenticate before send? [y|n]: ", 'sky_blue', true)
 				auth = $stdin.gets.chomp
 			end while auth != 'y' && auth != 'n'
 			conf_info['auth'] = auth
 			if conf_info['auth'] == 'y'
-				@log.write("\t\t\tUsername: ", 'sky_blue')
+				@log.write_noel("\t\t\tUsername: ", 'sky_blue', true)
 				conf_info['smtp_user'] = $stdin.gets.chomp
-				@log.write("\t\t\tPassword: ", 'sky_blue')
+				@log.write_noel("\t\t\tPassword: ", 'sky_blue', true)
 				system "stty -echo"
 				conf_info['smtp_pass'] = $stdin.gets.chomp
 				system "stty echo"
 			end
-			@log.write("\t\t\tSend mail to: ", 'sky_blue')
+			@log.write_noel("\t\t\tSend mail to: ", 'sky_blue', true)
 			conf_info['mail_to'] = $stdin.gets.chomp
-			@log.write("\t\t\tSend copy to: ", 'sky_blue')
+			@log.write_noel("\t\t\tSend copy to: ", 'sky_blue', true)
 			conf_info['copy_to'] = $stdin.gets.chomp
-			@log.write("\t\t\tSend mail from: ", 'sky_blue')
+			@log.write_noel("\t\t\tSend mail from: ", 'sky_blue', true)
 			conf_info['mail_from'] = $stdin.gets.chomp
 		end
 		if File.directory?(File.dirname(@config_file))

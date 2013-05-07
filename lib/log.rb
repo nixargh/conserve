@@ -20,19 +20,21 @@ class Log
 		@log_file = log_file
 	end
 
-	def write(info=nil, color=nil) # writing colored text to output WITH "end of line"
+	def write(info=nil, color=nil, interactive=false) # writing colored text to output WITH "end of line"
 		colored_info = to_paint(info, color)
 		if @log_enabled == true
 			to_log(colored_info, "\n")
+			to_stdout(colored_info, "\n") if interactive
 		else
 			to_stdout(colored_info, "\n")
 		end
 	end
 	
-	def write_noel(info=nil, color=nil) # writing colored text to output WITHOUT "end of line"
+	def write_noel(info=nil, color=nil, interactive=false) # writing colored text to output WITHOUT "end of line"
 		colored_info = to_paint(info, color)
 		if @log_enabled == true
 			to_log(colored_info, '')
+			to_stdout(colored_info, '') if interactive
 			@skip_time = true
 		else
 			to_stdout(colored_info, '')
