@@ -89,6 +89,7 @@ class Inform
 		html_info = Array.new
 		info = s_to_a(info)
 		info.each{|line|
+			line.chomp!
 			line.gsub!(red, h_red)
 			line.gsub!(green, h_green)
 			line.gsub!(yellow, h_yellow)

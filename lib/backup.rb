@@ -30,7 +30,6 @@ class Backup
 
 	def create!
 		begin
-			@log.write
 			@log.write("Backup started - #{Time.now.asctime}")
 			destination_parse = parse_and_mount(@destination)
 			@source_is_blockdev = true if File.blockdev?(@source)
@@ -146,9 +145,7 @@ class Backup
 			raise "path is \"nil\"" if !path
 			status = 0
 			error = nil
-#			path = parse_path(path)
 			server, directory, file = parse_path(path)
-#			raise "Path error: #{path[1]}" if !path[0]
 			if server
 			# server name or ip found on path argument
 				remote_directory = "//#{server}#{directory}"
@@ -191,19 +188,6 @@ class Backup
 			else
 				raise "path \"#{path}\" not found."
 			end
-#			file = File.basename(path)
-#			if File.directory?(path)
-#				directory = path
-#				file = nil
-#			elsif File.directory?(file)
-#				directory = "#{File.dirname(path)}/#{file}"
-#			else
-#				directory = File.dirname(path)
-#			end
-#			if File.exist?(directory) && File.directory?(directory)
-#			else
-#				raise "Can't find directory - #{directory}"
-#			end
 		end
 		return server, directory, file
 	end
@@ -249,7 +233,7 @@ class Backup
 	def create_image(partition, path) # creates image of partition or HDD
 		begin
 			@log.write_noel("\t\tCreating image of #{partition} - ")
-			block_size = @lvm.lvm_block_size
+			block_size = @lvm ? @lvm.lvm_block_size : 4
 			dd_log = "/tmp/dd_#{rand(100)}.log"
 			if @archive
 				path = "#{path}.gz"
