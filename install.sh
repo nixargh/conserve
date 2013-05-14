@@ -1,7 +1,7 @@
 #!/bin/bash
 #### INFO ######################################################################
 # (*w) 
-VERSION=3
+VERSION=4
 #### SETTINGS ##################################################################
 BIN='conserve'
 LIBS='lib'
@@ -42,10 +42,12 @@ function install {
 	if test ! -d $LIBDIR; then
 		mkdir $LIBDIR
 	fi
+	rm -f $LIBDIR/*
+	echo "  old libs deleted from $LIBDIR"
 	cp -f ./$LIBS/* $LIBDIR
 	echo "	libs copied to $LIBDIR"
-	chmod 644 $LIBDIR
-	chown root:root $LIBDIR
+	chmod 644 -R $LIBDIR
+	chown root:root -R $LIBDIR
 
 	copyconf $INFORM
 	copyconf $CRED

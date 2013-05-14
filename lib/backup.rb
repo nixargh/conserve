@@ -96,7 +96,7 @@ class Backup
 	def umount!(mount_point) # unmounting mount point in verbose mode
 		@log.write_noel("\t\tUnmounting #{mount_point}. - ")
 		info, error = runcmd("umount -v #{mount_point}")
-		if info.index('unmounted') && !error
+		if info && !error
 			@log.write('[OK]', 'green')
 		else
 			@log.write('[FAILED}', 'red')
@@ -309,15 +309,13 @@ class Backup
 
 	def mount_smb(what, where, type) # mounts smb or cifs share
 		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if !File.exist?(`which 'mount.cifs'`.chomp)
-		@log.write("\tMounting SMB share: ")
+		@log.write_noel("\tMounting SMB share: ")
 		server = (what.split("/"))[2]
 		if check_online(server)[0] == 0
 			random_dir = create_random_dir(where)
 			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
 			create_cred_file if File.exist?(@credential_file) == false
-			#credential_file = create_cred_file[2] if (credential_file = @credential_file) == nil
-#				puts "mount -t cifs #{what} #{mount_dir} -o credential=#{@credential_file}"
-			mount_stat = $operate.cmd_output("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
+			mount_stat = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
 			mount_check = check_mount_stat(mount_stat, what, mount_dir)
 			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
 			test_file = "#{path}/test_file"
@@ -336,7 +334,7 @@ class Backup
 	end
 
 	def mount_local(what, where, type)
-		@log.write_noel("\tMounting local disk: ",)
+		@log.write_noel("\tMounting local disk: ")
 		random_dir = create_random_dir(where)
 		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
 		mount_stat = runcmd("mount #{what} #{mount_dir}")
