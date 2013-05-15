@@ -1,5 +1,5 @@
 class LVM_operate
-	attr_accessor :log, :lvm_block_size, :duplicate_warning
+	attr_accessor :log, :lvm_block_size, :duplicate_warning, :snapshots_created
 	include Add_functions
 	
 	def initialize
@@ -16,14 +16,14 @@ class LVM_operate
 	end
 	
 	def clean!
-		sleep 2
 		@snapshots_created.each{|snapshot|
+			sleep 2
 			info, error = delete_snapshot(snapshot)
 			if info
-				@log.write_noel("\t\tDeleting snapshot of #{snapshot} - ")
+				@log.write_noel("\t\t\tDeleting snapshot #{snapshot} - ")
 				@log.write('[OK]', 'green')
 			else
-				@log.write_noel("\t\tCan't delete #{snapshot} snapshot: #{error}.  - ")
+				@log.write_noel("\t\t\tCan't delete #{snapshot} snapshot: #{error}.  - ")
 				@log.write('[FAILED]', 'red')
 			end
 		}
@@ -33,17 +33,22 @@ class LVM_operate
 		begin
 			status = 0
 			volume = convert_to_non_mapper(volume) if volume.index("mapper")
-			snapshot = "#{File.basename(volume)}_backup"
-			snapshot_size = find_space_for_snapshot(get_volume_group(volume)) * @snapshot_size_part
-			snapshot_size = snapshot_size/100
-			action = "lvcreate -l#{snapshot_size} -s -n #{snapshot} #{volume}"
-			info, error = do_it(action)
-			snapshot = File.dirname(volume) + "\/" + snapshot
-			if error
-				raise error
+			snapshot_name = "#{File.basename(volume)}_backup"
+			snapshot = File.dirname(volume) + "\/" + snapshot_name
+			if @snapshots_created.index(snapshot) && File.exist?(snapshot)
+				error = nil
+				@log.write_noel(' [Exist] ', 'yellow')
 			else
-				@snapshots_created.push(snapshot)
-				raise "Could not find snapshot: #{snapshot}. Maybe it's not created." if !File.exist?(snapshot)
+				snapshot_size = find_space_for_snapshot(get_volume_group(volume)) * @snapshot_size_part
+				snapshot_size = snapshot_size/100
+				action = "lvcreate -l#{snapshot_size} -s -n #{snapshot_name} #{volume}"
+				info, error = do_it(action)
+				if error
+					raise error
+				else
+					@snapshots_created.push(snapshot)
+					raise "Could not find snapshot: #{snapshot}. Maybe it's not created." if !File.exist?(snapshot)
+				end
 			end
 		rescue
 			status = 1
@@ -105,11 +110,11 @@ class LVM_operate
 				error = nil
 			elsif error.index("give up on open_count")
 				# this is to avoid SLES 11 sp.1 bug with "Unable to deact, open_count is 1" warning
-				@log.write("\t\tBuged lvremove detected. Warnings on snapshot remove.", 'yellow')
+				@log.write("\t\t\tBuged lvremove detected. Warnings on snapshot remove.", 'yellow')
 				error = nil
 			elsif error.index("Found duplicate PV")
 				# this is to avoid duplication of block device with SLES11 on Hyper-V
-				@log.write("\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if @duplicate_warning == 0
+				@log.write("\t\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if @duplicate_warning == 0
 				error = nil
 				@duplicate_warning = 1
 			else

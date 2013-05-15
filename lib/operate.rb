@@ -2,35 +2,42 @@ class Operate
 	def read_arguments
 		raise "Nothing will happens without parametres. Use \"--help\" or \"-h\" for full list." if ARGV == []
 		params = Hash.new
+		params['use_lvm'] = true
 		ARGV.each{|arg|
-			if arg == '-h' || arg == '--help'
+			parameter, value = arg.split('=')
+			if parameter == '-h' || parameter == '--help'
 				help
 				exit 0
-			elsif arg == '--no_lvm'
+			elsif parameter == '--no_lvm'
 				params['use_lvm'] = false
-			elsif arg == '--gzip' || arg == '-z'
+			elsif parameter == '--gzip' || parameter == '-z'
 				params['archive'] = true
-			elsif arg.index('--log') == 0 || arg.index('-l') == 0
+			elsif parameter == '--log' || parameter == '-l'
 				params['log_enabled'] = true
-				raise "You need to enter full log path." if !(params['log_file'] = arg.split('=')[1])
-			elsif arg.index('--mbr') == 0
+				raise "You need to enter full log path." if !(params['log_file'] = value)
+			elsif parameter == '--mbr'
 				params['mbr'] = true
-			elsif arg.index('--source') == 0 || arg.index('-s') == 0
-				raise "You must enter source path." if (params['source'] = arg.split('=')[1]) == nil
-			elsif arg.index('--destination') == 0 || arg.index('-d') == 0
-				raise "You must enter destination path." if (params['destination'] = arg.split('=')[1]) == nil
-			elsif arg.index('--mountdir') == 0 || arg.index('-m') == 0
-				raise "You must enter root mount directory." if (params['mountdir'] = arg.split('=')[1]) == nil
-			elsif arg.index('--credential') == 0 || arg.index('-c') == 0
-				raise "You must enter full path to credential file." if (params['cred_file'] = arg.split('=')[1]) == nil
-			elsif arg.index('--inform') == 0 || arg.index('-i') == 0
-				raise "You must enter full path to config file." if (params['inform'] = arg.split('=')[1]) == nil
-			elsif arg.index('--job_name') == 0 || arg.index('-n') == 0
-				raise "You must enter backup job name." if (params['job_name'] = arg.split('=')[1]) == nil
-			elsif arg == '-v' || arg == '--version'
+			elsif parameter == '--plain' || parameter == '-p'
+				params['plain_files_tree'] = true
+			elsif parameter == '--source' || parameter == '-s'
+				raise "You must enter source path." if !(params['source'] = value)
+			elsif parameter == '--destination' || parameter == '-d'
+				raise "You must enter destination path." if !(params['destination'] = value)
+			elsif parameter == '--mountdir' || parameter == '-m'
+				raise "You must enter root mount directory." if !(params['mountdir'] = value)
+			elsif parameter == '--credential' || parameter == '-c'
+				raise "You must enter full path to credential file." if !(params['cred_file'] = value)
+			elsif parameter == '--collect' || parameter == '-cl'
+				params['collect'] = true
+				params['collect_file'] = value
+			elsif parameter == '--inform' || parameter == '-i'
+				raise "You must enter full path to config file." if !(params['inform'] = value)
+			elsif parameter == '--job_name' || parameter == '-n'
+				raise "You must enter backup job name." if !(params['job_name'] = value) 
+			elsif parameter == '-v' || parameter == '--version'
 				puts "Conserve - backup tool v.#{$version} (*w)"
 				exit 0
-			elsif arg == '--debug'
+			elsif parameter == '--debug'
 				params['debug'] = true
 			else
 				raise "Bad parametr #{arg}. Use \"--help\" or \"-h\" for full list of parametrs."
@@ -44,29 +51,39 @@ class Operate
 	def help()
 		puts "Conserve v.#{$version}
 - is a backup tool, which can do:
-	1. Backup block devices with LVM and dd.
-	2. Backup MBR.
-	3. Backup files from lvm snapshot or from \"live\" fs.
-	4. Backup from and to smb shares.
+\t1. Backup block devices with LVM snapshots and dd.
+\t2. Backup MBR.
+\t3. Backup files from LVM snapshot or from \"live\" fs.
+\t4. Backup to smb share.
+\t5. Collect information useful on restore.
+\t6. Send report by email.
 
 Options:
-	-l=	--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
-	-s=	--source='server|/dev/dev0'\t\tfull path to block device or files to backup
-	-d=	--destination='server|/dir/file'\tfull path where to store backup
-	\t\t\t\t\t\tif path isn't smb share then you just use local path to files;
-	\t\t\t\t\t\tserver - server name where share is, /dir/file - files path on the share
-		--no_lvm\t\t\t\tdo not use LVM snapshot
-	-m=	--mountdir='/dir'\t\t\troot directory to mount network shares (\"/mnt\" by default)
-	-c=	--credential='file'\t\t\tfull path to file with smb credentials. File format as for cifs mount.
-	-z	--gzip\t\t\t\t\tarchive block device image by gzip or tar and gzip files when backuping non block device
-	\t--mbr\t\t\t\t\tbackup MBR from device pointed like source
-	-i=	--inform='/dir/inform.conf'\t\tinform about backup status as described at config file
-	\t\t\t\t\t\tif no config file found it will be created
-	-n=	--job_name='Daily MBR Backup'\t\tset display name for backup job (equal to given conserve parametrs by default)
+\t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
+\t-s=\t--source='path'\t\t\t\tfull path to block device, file or directory to backup;
+\t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
+\t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. 
+\t-d=\t--destination='server|/dir[/file]'\tfull path where to store backup;
+\t\t\t\t\t\t\tif 'file' not specified than new files, with names equals to source names,
+\t\t\t\t\t\t\twill be created inside destination directory;
+\t\t\t\t\t\t\tif path isn't smb share then you just use local path to files;
+\t\t\t\t\t\t\t'server' - server name where share is, '/dir/file' - files path on the share.
+\t\t--no_lvm\t\t\t\tdo not use LVM snapshot.
+\t-p\t--plain\t\t\t\t\tbackup files without tar as plain tree.
+\t-m=\t--mountdir='/dir'\t\t\troot for temporary directories used to mount network shares or LVM snapshots (\"/mnt\" by default).
+\t-c=\t--credential='file'\t\t\tfull path to file with smb credentials. File format as for cifs mount.
+\t-z\t--gzip\t\t\t\t\tarchive block device image by gzip or tar and gzip files when backuping non block device.
+\t\t--mbr\t\t\t\t\tbackup MBR from device pointed like source.
+\t-cl\t--collect\t\t\t\tstore information about system;
+\t\t\t\t\t\t\tby default path to the file will be \"/destination_dir/fqdn.info\".
+\t\t\t\t\t\t\tif you want to save information to other file you can use it like -cl='dir/file'.
+\t-i=\t--inform='/dir/inform.conf'\t\tinform about backup status as described at config file;
+\t\t\t\t\t\t\tif no config file found it will be created.
+\t-n=\t--job_name='Daily MBR Backup'\t\tset display name for backup job.
 		
-	-h	--help\t\t\t\t\tto show this help
-	-v	--version\t\t\t\tto show Conserve version
-		--debug\t\t\t\t\tshow more information about code errors 
+\t-h\t--help\t\t\t\t\tto show this help.
+\t-v\t--version\t\t\t\tto show Conserve version.
+\t\t--debug\t\t\t\t\tshow more information about code errors.
 "
 	end
 end	

@@ -1,4 +1,4 @@
-history version 2.20
+history version 2.22
 (sorry some part only on Russian)
 
 conserve:
@@ -101,11 +101,12 @@ conserve:
 		+	1. HUDGE CODE REFACTORING.
 		+	2. Backup#guess_file_volume: Rewrite using "df -T".
 		+	3. [BUG] Backup of files. With LVM: Trying to find /var/CommuniGate/ on ... -       Error:  *** Can't find where /dev/dm-4 mounted ***
+		+	4. Added --collect or -cl command line parameter to store system information collected by Collector class.
+		+	5. Backup of files: New option '-p' or '--plain' to copy files without using tar or gzip as plain tree. '-z' will be ignored when '-p' used.
+		+	6. Backup of files: Set source as comma-separated list of files and/or directories. '*' sign can be used to backup all directory entries as individual sources. 
 
 	to do:
 			1. Baremetal backup option. It's collecting information and doing backup for all partitions.
-			2. Backup of files. Now it creates tar on destination. Need to add option to save as directory tree.
-			3. Backup of files. Set source as list of files and/or directories and backup them to separate archives.
 			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 			What I need to recover full system?

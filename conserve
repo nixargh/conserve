@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.3'
+$version = '0.2.1.6'
 #### SETTINGS ##################################################################
 #### REQUIRE ###################################################################
 require 'fileutils'
@@ -15,6 +15,8 @@ class Conserve
 		@params = nil
 		@log = nil
 		@error = nil
+		@lvm = nil
+		@hostname = `hostname -f`.chomp
 	end
 
 	def run # run all that staff
@@ -23,6 +25,7 @@ class Conserve
 			parse_arguments!
 			start_logging!
 			collect_sysinfo!
+			start_lvm! if @params['use_lvm']
 			start_backup!
 		rescue
 			if @log
@@ -30,9 +33,13 @@ class Conserve
 				@log.write_noel("Conserve#run error: ", 'red')
 				@log.write(@error, 'yellow')
 				@log.write(@error.backtrace, 'sky_blue') if @debug
+			else
+				raise $!
 			end
 		ensure
-			inform! if @params['inform']
+			if @params
+				inform! if @params['inform']
+			end
 		end
 	end
 
@@ -75,17 +82,39 @@ class Conserve
 		collector = Collector.new
 		@sysinfo = collector.collect
 		@log.write("SysInfo collected.", 'yellow') if @debug
+		if @params['collect']
+			save_sysinfo!
+		end
+	end
+
+	def save_sysinfo!
+		if @params['collect_file'] || @params['destination']
+			file = @params['collect_file'] ? @params['collect_file'] : "#{File.dirname(@params['destination'])}/#{@hostname}.info"
+			require 'yaml'
+			File.open(file, 'w'){|file|
+				file.write(@sysinfo.to_yaml)	
+			}
+		else
+			raise "Can't save system information because nor path nor destination not specified."
+		end
+	end
+
+	def start_lvm!
+		@lvm = LVM_operate.new
+		@lvm.log = @log
 	end
 
 	def start_backup!
 		@log.write("Backup started.", 'yellow') if @debug
+		raise "You have to specify source and destination for backup." if !@params['source'] || !@params['destination']
 		backup = Backup.new(@params['source'], @params['destination'])
 		backup.log = @log
 		backup.mbr = true if @params['mbr']
-		backup.use_lvm = false if @params['use_lvm'] == false
+		backup.lvm = @lvm
 		backup.mount_point = @params['mount_point'] if @params['mount_point']
 		backup.credential_file = @params['cred_file'] if @params['cred_file']
 		backup.archive = true if @params['archive']
+		backup.plain = @params['plain_files_tree'] if @params['plain_files_tree']
 		backup.create!
 	end
 
@@ -104,13 +133,13 @@ class Conserve
 		@log.write("Checking ruby gems for Inform.", 'yellow') if @debug
 		ruby_gems = Ruby_gems.new
 		if !ruby_gems.check_rubygems
-			text = "\t\t\"ruby gem\" utility not installed. Inform function require it."
+			text = "\t\t\t\"ruby gem\" utility not installed. Inform function require it."
 			@log.write(text)
 			puts text
 			ruby_gems.install_rubygems
 		end
 		if !ruby_gems.gem_installed?('mail')
-			text = "\t\t\"mail\" ruby gem not installed. Inform function require it."
+			text = "\t\t\t\"mail\" ruby gem not installed. Inform function require it."
 			@log.write(text, 'red')
 			puts text
 			ruby_gems.install_mail_gem
@@ -134,7 +163,7 @@ begin
 	conserve = Conserve.new
 	conserve.run
 rescue
-	puts "Conserve: #{$!}"
-	puts $!.backtrace
+	puts "\t#{$!}"
+#	puts $!.backtrace
 	exit 1
 end
