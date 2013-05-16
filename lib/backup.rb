@@ -1,3 +1,18 @@
+#Conserve - linux backup tool.
+#Copyright (C) 2013  nixargh <nixargh@gmail.com>
+#
+#This program is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Backup
 	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm
 	include Add_functions
@@ -346,7 +361,7 @@ class Backup
 	def mount(what, type, where = @mount_point)
 		if @mounted[what]
 			path = @mounted[what]
-			@log.write("\t\t\tDevice #{what} already mounted at #{path}.")
+			@log.write("\t\tDevice #{what} already mounted at #{path}.")
 		else
 			if File.directory?(where)
 				if type == 'smb'
@@ -365,7 +380,7 @@ class Backup
 
 	def mount_smb(what, where, type) # mounts smb or cifs share
 		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if !File.exist?(`which 'mount.cifs'`.chomp)
-		@log.write_noel("\t\t\tMounting SMB share: ")
+		@log.write_noel("\t\tMounting SMB share: ")
 		server = (what.split("/"))[2]
 		if check_online(server)[0] == 0
 			random_dir = create_random_dir(where)
@@ -390,7 +405,7 @@ class Backup
 	end
 
 	def mount_local(what, where, type)
-		@log.write_noel("\t\t\tMounting local disk: ")
+		@log.write_noel("\t\tMounting local disk: ")
 		random_dir = create_random_dir(where)
 		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
 		mount_stat = runcmd("mount #{what} #{mount_dir}")
