@@ -41,8 +41,12 @@ class Conserve
 			parse_arguments!
 			start_logging!
 			collect_sysinfo!
-			start_lvm! if @params['use_lvm']
-			start_backup!
+			if @params['baremetal']
+				start_baremetal!
+			else
+				start_lvm! if @params['use_lvm']
+				start_backup!
+			end
 		rescue
 			if @log
 				@error = $!
@@ -63,7 +67,7 @@ class Conserve
 
 	def load_libraries! # loads additional Classses
 		$LOAD_PATH.unshift("./lib")
-		$LOAD_PATH.unshift(@lib_dir)
+#		$LOAD_PATH.unshift(@lib_dir)
 		require 'add_functions'
 		require 'lvm_operate'
 		require 'backup'
@@ -113,6 +117,10 @@ class Conserve
 		else
 			raise "Can't save system information because nor path nor destination not specified."
 		end
+	end
+	
+	def start_baremetal!
+		baremetal = Baremetal.new
 	end
 
 	def start_lvm!

@@ -23,6 +23,8 @@ class Operate
 			if parameter == '-h' || parameter == '--help'
 				help
 				exit 0
+			elsif parameter == '--baremetal' || parameter == '-b'
+				params['baremetal'] = true
 			elsif parameter == '--no_lvm'
 				params['use_lvm'] = false
 			elsif parameter == '--gzip' || parameter == '-z'

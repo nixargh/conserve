@@ -18,18 +18,18 @@ class Collector
 
 	def initialize
 		# creatures list
-		hdd, md, partition, lvm, mount = Hash.new, Hash.new, Hash.new, Hash.new, Hash.new
+		hdd, md, partition, lvm, mount, boot = Hash.new, Hash.new, Hash.new, Hash.new, Hash.new, Hash.new
 
 		# Hash of creatures information hashes
-		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm, 'mount' => mount }
+		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm, 'mount' => mount}
 	end
 
 	def collect # collect iformation about creatures
 		list_disks!
-		#@creatures.each_key{|creature|
 		@creatures.sort.each{|creature, value|
-			@creatures[creature]['info'] = eval("get_#{creature}_info")
+			@creatures[creature] = eval("get_#{creature}_info")
 		}
+		@creatures['boot'] = [get_boot_info]
 		@creatures
 	end
 
@@ -44,6 +44,7 @@ class Collector
 				hdd['size'] = size 
 				hdd['blocksize'] = get_device_blocksize(disk)
 				hdd['uuid'], hdd['type'] = get_uuid_and_type(disk)
+				hdd['has_grub_mbr'] = find_grub_mbr(disk)
 				hdd_list.push(hdd)
 			end
 		}
@@ -75,8 +76,7 @@ class Collector
 
 	def get_partition_info # collect information about partition tables
 		partition_list = Array.new
-		creatures = @creatures['hdd']
-		creatures['info'].each{|hdd|
+		@creatures['hdd'].each{|hdd|
 			if hdd['type'] == nil
 				partitions = Hash.new
 				partitions['disk'] = hdd['name']
@@ -123,6 +123,55 @@ class Collector
 			mounts.push(line.split(' ')) if line.index('#') != 0
 		}
 		mounts
+	end
+
+	def get_boot_info # find where GRUB installed
+		bootloader = Hash.new
+		boot_folder_hdd = find_where_boot_folder
+		@creatures['hdd'].each{|hdd|
+			if hdd['has_grub_mbr']
+				bootloader['hdd'] = hdd['name'] if hdd['name'] == boot_folder_hdd
+				bootloader['type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
+			end
+		}
+		bootloader
+	end
+
+	def find_where_boot_folder # detect on which device "/boot" folder is
+		boot, root = nil, nil
+		@creatures['mount'].each{|line|
+			boot = line[0] if line[1] == '/boot'
+			root = line[0] if line[1] == '/'
+		}
+		device = boot ? boot : root
+		if device.upcase.index('UUID')
+			uuid = device.split('=')[1]
+			device = find_by_uuid(uuid)
+		end
+		device.chop
+	end
+
+	def find_by_uuid(uuid) # find hdd or partition by it's UUID
+		@creatures['hdd'].each{|hdd|
+			return hdd['name'] if uuid == hdd['uuid']
+		}
+		@creatures['partition'].each{|hdd|
+			hdd['partitions'].each{|partition|
+				return partition['name'] if uuid == partition['uuid']
+			}
+		}
+		nil
+	end
+
+	def find_grub_mbr(device) # detect if there is GRUB's info at hdd mbr
+		info, error = runcmd("dd bs=512 count=1 if=#{device} 2>/dev/null | strings")
+		if info
+		info.each_line{|line|
+			line.chomp!.strip!	
+			return true if line == 'GRUB'
+		}
+		end
+		false
 	end
 
 	def list_disks! # create list with sizes of different disk devices on current machine

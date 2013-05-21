@@ -18,10 +18,10 @@ function copyconf {
 	if test -e ./$CONFIG; then
 		if test -e $CONFDIR/$CONFIG; then
 			mv $CONFDIR/$CONFIG $CONFDIR/$CONFIG.bak
-			echo "	$CONFDIR/$CONFIG moved to $CONFDIR/$CONFIG.bak"
+			echo -e "\t$CONFDIR/$CONFIG moved to $CONFDIR/$CONFIG.bak"
 		fi
 		cp ./$CONFIG $CONFDIR
-		echo "	./$CONFIG copied to $CONFDIR/"
+		echo -e "\t./$CONFIG copied to $CONFDIR/"
 		chmod 660 $CONFDIR/$CONFIG
 		chown root:root $CONFDIR/$CONFIG
 	fi
@@ -35,7 +35,7 @@ function install {
 	chmod 770 $CONFDIR
 
 	cp -f ./$BIN $BINDIR/conserve
-	echo "	./$BIN copied to $BINDIR/conserve"
+	echo -e "\t./$BIN copied to $BINDIR/conserve"
 	chmod 755 $BINDIR/conserve
 	chown root:root $BINDIR/conserve
 
@@ -43,9 +43,9 @@ function install {
 		mkdir $LIBDIR
 	fi
 	rm -f $LIBDIR/*
-	echo "  old libs deleted from $LIBDIR"
+	echo -e "\told libs deleted from $LIBDIR"
 	cp -f ./$LIBS/* $LIBDIR
-	echo "	libs copied to $LIBDIR"
+	echo -e "\tlibs copied to $LIBDIR"
 	chmod 644 -R $LIBDIR
 	chown root:root -R $LIBDIR
 
