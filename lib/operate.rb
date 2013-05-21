@@ -77,9 +77,12 @@ Conserve v.#{$version}
 \t3. Backup files from LVM snapshot or from \"live\" fs.
 \t4. Backup to smb share.
 \t5. Collect information useful on restore.
-\t6. Send report by email.
+\t6. Find out what to backup for bare metal restore.
+\t7. Send report by email.
 
 Options:
+\t-b\t--baremetal\t\t\t\tdetect what to backup automaticaly;
+\t\t\t\t\t\t\tyou have to point destination folder to store backup files.
 \t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
 \t-s=\t--source='path'\t\t\t\tfull path to block device, file or directory to backup;
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;

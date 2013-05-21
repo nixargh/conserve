@@ -72,18 +72,7 @@ class LVM_operate
 		result = [status, error, snapshot]
 	end
 	
-	def convert_to_non_mapper(device)
-		temp_symbol = '?'
-		device.gsub!(/-{2}/, temp_symbol)
-		lg, lv = File.basename(device).split('-')
-		device = "/dev/#{lg}/#{lv}"
-		device.gsub!(temp_symbol, '-')
-		if File.blockdev?(device)
-			return device
-		else
-			raise "Can't convert #{device} to non_mapper"
-		end
-	end
+	# convert_to_non_mapper method moved to Add_functions
 
 	def delete_snapshot(device)
 		action = "lvremove -f #{device}"

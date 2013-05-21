@@ -1,10 +1,9 @@
 Conserve history.
-version 2.23
+version 2.24
 
 conserve:
 	to do:
-			1. Baremetal backup option. It's collecting information and doing backup for all partitions.
-			2. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			1. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 			What I need to recover full system?
 				1. Hardware disks information.
@@ -12,6 +11,7 @@ conserve:
 				3. Partition table.
 				4. Lvm structure.
 				5. Information of how to mount partition.
+				6. Bootloader information.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
@@ -20,6 +20,7 @@ conserve:
 		+	4. Added --collect or -cl command line parameter to store system information collected by Collector class.
 		+	5. Backup of files: New option '-p' or '--plain' to copy files without using tar or gzip as plain tree. '-z' will be ignored when '-p' used.
 		+	6. Backup of files: Set source as comma-separated list of files and/or directories. '*' sign can be used to backup all directory entries as individual sources. 
+		+	7. Baremetal backup option. It's collecting information and doing backup for all partitions.
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

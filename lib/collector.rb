@@ -21,7 +21,7 @@ class Collector
 		hdd, md, partition, lvm, mount, boot = Hash.new, Hash.new, Hash.new, Hash.new, Hash.new, Hash.new
 
 		# Hash of creatures information hashes
-		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm, 'mount' => mount}
+		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm}
 	end
 
 	def collect # collect iformation about creatures
@@ -29,7 +29,8 @@ class Collector
 		@creatures.sort.each{|creature, value|
 			@creatures[creature] = eval("get_#{creature}_info")
 		}
-		@creatures['boot'] = [get_boot_info]
+		@creatures['mount'] = get_mount_info
+		@creatures['boot'] = get_boot_info
 		@creatures
 	end
 
@@ -68,7 +69,7 @@ class Collector
 						}
 					end
 				}
-				raid['has_grub_mbr'] = find_grub_mbr(disk)
+				raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
 				md_list.push(raid)
 			end	
 		}
@@ -103,6 +104,7 @@ class Collector
 				if file != '.' && file !='..'
 					vg = Hash.new
 					vg['name'] = file
+					vg['lvs'] = get_vg_lvs(file)
 					backup_file = "#{backup_dir}/#{file}"
 					backup_files.push(backup_file)
 					vg['config'] = IO.read(backup_file)
@@ -118,10 +120,31 @@ class Collector
 		end
 	end
 
+	def get_vg_lvs(vg) # find logical volumes of LVM volume group
+		lvs = Array.new
+		info, error = runcmd("lvdisplay -c #{vg}")
+		if !error
+			info.each_line{|line|
+				line.chomp!.strip!
+				lv = line.split(':')[0]
+				lvs.push(lv)
+			}
+		else
+			raise "can't find lv for vg=\"#{vg}\": #{error}."
+		end
+		lvs
+	end
+
 	def get_mount_info # collect information about how to mount partitions
 		mounts = Array.new
 		IO.read('/etc/fstab').each_line{|line|
-			mounts.push(line.split(' ')) if line.index('#') != 0
+			if line.index('#') != 0
+				device = Hash.new
+				device['mount_info'] = line.split(' ') 
+				device_name = device['mount_info'][0]
+				device['name'] = to_ndn(device_name)
+				mounts.push(device)
+			end
 		}
 		mounts
 	end
@@ -132,25 +155,49 @@ class Collector
 		hdd_and_md = @creatures['hdd'] + @creatures['md']
 		hdd_and_md.each{|hdd|
 			if hdd['has_grub_mbr']
-				bootloader['hdd'] = hdd['name'] if hdd['name'] == boot_folder_hdd
-				bootloader['type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
+				if hdd['name'] == boot_folder_hdd
+					bootloader['bootloader_on'] = hdd['name'] 
+					bootloader['bootloader_type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
+					bootloader['partition'] = find_boot_partition
+				end
 			end
 		}
 		bootloader
 	end
 
+	def find_boot_partition # detect if boot partition separated from root or return nil
+		@creatures['mount'].each{|device|
+			line = device['mount_info']
+			if line[1] == '/boot'
+				partition = line[0]
+				return to_ndn(partition)
+			end
+		}
+		nil
+	end
+
 	def find_where_boot_folder # detect on which device "/boot" folder is
 		boot, root = nil, nil
-		@creatures['mount'].each{|line|
+		@creatures['mount'].each{|device|
+			line = device['mount_info']
 			boot = line[0] if line[1] == '/boot'
 			root = line[0] if line[1] == '/'
 		}
 		device = boot ? boot : root
+		device = to_ndn(device)
+		device =~ /\/dev\/md[0-9]/ ? device : device.chop
+	end
+
+	def to_ndn(device) # convert different device path to "normal device name". exp: /dev/data/test or /dev/sda2
+		return nil if !device
 		if device.upcase.index('UUID')
 			uuid = device.split('=')[1]
-			device = find_by_uuid(uuid)
+			return find_by_uuid(uuid)
+		elsif device.index('/mapper/')
+			return convert_to_non_mapper(device)	
+		else
+			return device
 		end
-		device =~ /\/dev\/md[0-9]/ ? device : device.chop
 	end
 
 	def find_by_uuid(uuid) # find hdd or partition by it's UUID

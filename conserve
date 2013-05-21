@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.6'
+$version = '0.2.1.7'
 #### LICENSE ###################################################################
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>
@@ -66,8 +66,7 @@ class Conserve
 	private
 
 	def load_libraries! # loads additional Classses
-		$LOAD_PATH.unshift("./lib")
-#		$LOAD_PATH.unshift(@lib_dir)
+		File.directory?("./lib") ? $LOAD_PATH.unshift("./lib") : $LOAD_PATH.unshift(@lib_dir)
 		require 'add_functions'
 		require 'lvm_operate'
 		require 'backup'
@@ -76,6 +75,7 @@ class Conserve
 		require 'ruby_gems'
 		require 'log'
 		require 'collector'
+		require 'baremetal'
 	end
 
 	def parse_arguments! # parse command line arguments
@@ -107,20 +107,35 @@ class Conserve
 		end
 	end
 
-	def save_sysinfo!
-		if @params['collect_file'] || @params['destination']
-			file = @params['collect_file'] ? @params['collect_file'] : "#{File.dirname(@params['destination'])}/#{@hostname}.info"
-			require 'yaml'
-			File.open(file, 'w'){|file|
-				file.write(@sysinfo.to_yaml)	
-			}
+	def save_sysinfo! # saves system information to file
+		if @params['collect_file']
+			file = @params['collect_file']
+		elsif @params['baremetal'] || File.directory?(@params['destination'])
+			file = "#{@params['destination']}/#{@hostname}.sysinfo"
+		elsif @params['destination']
+			file = "#{File.dirname(@params['destination'])}/#{@hostname}.sysinfo"
 		else
 			raise "Can't save system information because nor path nor destination not specified."
 		end
+		require 'yaml'
+		File.open(file, 'w'){|file|
+			file.write(@sysinfo.to_yaml)	
+		}
+		@log.write("SysInfo saved.", 'yellow') if @debug
 	end
 	
-	def start_baremetal!
+	def start_baremetal! # creates and a number of backup jobs to create full backup
+		@log.write("Baremetal started.", 'yellow') if @debug
+		save_sysinfo!
 		baremetal = Baremetal.new
+		baremetal.sysinfo = @sysinfo
+		baremetal.params = @params
+		jobs = baremetal.create_jobs_list
+		jobs.each{|job|
+			job = @params.merge(job)
+			start_lvm! if job['use_lvm'] && !@lvm
+			start_backup!(job)
+		}
 	end
 
 	def start_lvm!
@@ -128,21 +143,21 @@ class Conserve
 		@lvm.log = @log
 	end
 
-	def start_backup!
+	def start_backup!(params=@params) # runs backup job
 		@log.write("Backup started.", 'yellow') if @debug
-		raise "You have to specify source and destination for backup." if !@params['source'] || !@params['destination']
-		backup = Backup.new(@params['source'], @params['destination'])
+		raise "You have to specify source and destination for backup." if !params['source'] || !params['destination']
+		backup = Backup.new(params['source'], params['destination'])
 		backup.log = @log
-		backup.mbr = true if @params['mbr']
-		backup.lvm = @lvm
-		backup.mount_point = @params['mount_point'] if @params['mount_point']
-		backup.credential_file = @params['cred_file'] if @params['cred_file']
-		backup.archive = true if @params['archive']
-		backup.plain = @params['plain_files_tree'] if @params['plain_files_tree']
+		backup.mbr = true if params['mbr']
+		backup.lvm = params['use_lvm'] ? @lvm : nil
+		backup.mount_point = params['mount_point'] if params['mount_point']
+		backup.credential_file = params['cred_file'] if params['cred_file']
+		backup.archive = true if params['archive']
+		backup.plain = params['plain_files_tree'] if params['plain_files_tree']
 		backup.create!
 	end
 
-	def inform!
+	def inform! # creates report
 		@log.write("Inform started.", 'yellow') if @debug
 		check_inform_gems!
 		inform = Inform.new
@@ -153,7 +168,7 @@ class Conserve
 		inform.run!
 	end
 
-	def check_inform_gems!
+	def check_inform_gems! # detect if you nedd to install some ruby gems
 		@log.write("Checking ruby gems for Inform.", 'yellow') if @debug
 		ruby_gems = Ruby_gems.new
 		if !ruby_gems.check_rubygems

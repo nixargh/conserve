@@ -1,4 +1,3 @@
-
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>
 #
@@ -15,19 +14,81 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Baremetal
-	attr_accessor :sysinfo
+	attr_accessor :sysinfo, :params
+	include Add_functions
 
 	def initialize
-		@jobs = Hash.new
+		@jobs = Array.new
 	end
 
-	def create_jobs_list
+	def create_jobs_list # run number of methods that creates jobs
+		compile_partitions_to_mount!
 		compile_mbr_backup!
-		compile_nonlvm_volumes_backup!
+		compile_boot_backup!
 		compile_lvm_volumes_backup!
+		compile_nonlvm_volumes_backup!
+		@jobs
 	end
 
-	def compile_mbr_backup!
-		
+	private
+
+	def compile_mbr_backup! # creates job to backup Master Boot Record of device with bootloader
+		job = Hash.new
+		job['name'] = "MBR backup"
+		job['source'] = @sysinfo['boot']['bootloader_on']
+		job['destination'] = "#{@params['destination']}/mbr"
+		job['mbr'] = true
+		job['archive'] = false 
+		@jobs.push(job)
+	end
+
+	def compile_boot_backup! # creates job to backup /boot if it is separated from root
+		boot_partition = @sysinfo['boot']['partition']
+			if boot_partition
+				job = Hash.new
+				job['name'] = "BOOT backup"
+				job['source'] = boot_partition
+				job['use_lvm'] = false
+				job['archive'] = true
+				@jobs.push(job)
+			end
+	end
+
+	def compile_lvm_volumes_backup! # creates jobs to backup LVM logical volumes that figurate at fstab
+		@sysinfo['lvm'].each{|vg|
+			vg['lvs'].each{|lv|
+				if @partitions_to_mount.index(lv)
+					job = Hash.new
+					job['name'] = "#{lv} backup"
+					job['source'] = lv
+					job['archive'] = true
+					@jobs.push(job)
+				end
+			}
+		}
+	end
+
+	def compile_nonlvm_volumes_backup! # creates jobs to backup non-LVM logical volumes that figurate at fstab (exept used for /boot)
+		@partitions_to_mount.each{|partition|
+			if partition =~ /\/dev\/[shm]d[a-z]*[0-9]+/ && partition != @sysinfo['boot']['partition']
+				job = Hash.new
+				job['name'] = "#{partition} backup"
+				job['source'] = partition
+				job['use_lvm'] = false
+				job['archive'] = true
+				@jobs.push(job)
+			end
+		}
+	end
+
+	def compile_partitions_to_mount! # creates list of devices that figurates at fstab
+		to_mount = Array.new
+		@sysinfo['mount'].each{|device|
+			device = device['name']
+			if device.index('/dev/') && !device.index('swap') && !device.index('tmp')
+				to_mount.push(device)
+			end
+		}
+		@partitions_to_mount = to_mount
 	end
 end

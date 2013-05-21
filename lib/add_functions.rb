@@ -43,24 +43,6 @@ module Add_functions
 		fromated_size
 	end
 
-#	def cmd_output(cmd) # get information after running external utility
-#		begin
-#			status = 0
-#			error = nil
-#			temp_log_err = '/tmp/conseve_cmd_err.log'
-#			temp_log = '/tmp/conseve_cmd.log'
-#			`#{cmd} 2>#{temp_log_err} 1>#{temp_log}`
-#			cmd_error = IO.read(temp_log_err)
-#			cmd_info = IO.read(temp_log)
-#		rescue
-#			status = 1
-#			error = $!
-#		ensure
-#			File.unlink(temp_log_err, temp_log)
-#		end
-#		result = [status, error, cmd_info, cmd_error] 
-#	end
-
 	def runcmd(cmd) # NEW VERSION OF "cmd_output". Get information after running external utility
 		begin
 			temp_log_err = "/tmp/conseve_cmd_err_#{rand(10000)}"
@@ -75,6 +57,19 @@ module Add_functions
 			raise "runcmd: #{$!}"
 		ensure
 			File.unlink(temp_log_err, temp_log)
+		end
+	end
+
+	def convert_to_non_mapper(device) # convert "device mapper path" to "normal device name"
+		temp_symbol = '?'
+		device.gsub!(/-{2}/, temp_symbol)
+		lg, lv = File.basename(device).split('-')
+		device = "/dev/#{lg}/#{lv}"
+		device.gsub!(temp_symbol, '-')
+		if File.blockdev?(device)
+			return device
+		else
+			raise "Can't convert #{device} to non_mapper"
 		end
 	end
 end
