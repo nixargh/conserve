@@ -68,6 +68,7 @@ class Collector
 						}
 					end
 				}
+				raid['has_grub_mbr'] = find_grub_mbr(disk)
 				md_list.push(raid)
 			end	
 		}
@@ -125,10 +126,11 @@ class Collector
 		mounts
 	end
 
-	def get_boot_info # find where GRUB installed
+	def get_boot_info # find where GRUB installed (ignore partitions)
 		bootloader = Hash.new
 		boot_folder_hdd = find_where_boot_folder
-		@creatures['hdd'].each{|hdd|
+		hdd_and_md = @creatures['hdd'] + @creatures['md']
+		hdd_and_md.each{|hdd|
 			if hdd['has_grub_mbr']
 				bootloader['hdd'] = hdd['name'] if hdd['name'] == boot_folder_hdd
 				bootloader['type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
@@ -148,7 +150,7 @@ class Collector
 			uuid = device.split('=')[1]
 			device = find_by_uuid(uuid)
 		end
-		device.chop
+		device =~ /\/dev\/md[0-9]/ ? device : device.chop
 	end
 
 	def find_by_uuid(uuid) # find hdd or partition by it's UUID
