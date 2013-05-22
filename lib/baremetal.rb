@@ -14,7 +14,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Baremetal
-	attr_accessor :sysinfo, :params
+	attr_accessor :sysinfo, :destination
 	include Add_functions
 
 	def initialize
@@ -34,9 +34,9 @@ class Baremetal
 
 	def compile_mbr_backup! # creates job to backup Master Boot Record of device with bootloader
 		job = Hash.new
-		job['name'] = "MBR backup"
+		job['job_name'] = "MBR backup"
 		job['source'] = @sysinfo['boot']['bootloader_on']
-		job['destination'] = "#{@params['destination']}/mbr"
+		job['destination'] = "#{@destination}/mbr"
 		job['mbr'] = true
 		job['archive'] = false 
 		@jobs.push(job)
@@ -46,7 +46,7 @@ class Baremetal
 		boot_partition = @sysinfo['boot']['partition']
 			if boot_partition
 				job = Hash.new
-				job['name'] = "BOOT backup"
+				job['job_name'] = "BOOT backup"
 				job['source'] = boot_partition
 				job['use_lvm'] = false
 				job['archive'] = true
@@ -59,7 +59,7 @@ class Baremetal
 			vg['lvs'].each{|lv|
 				if @partitions_to_mount.index(lv)
 					job = Hash.new
-					job['name'] = "#{lv} backup"
+					job['job_name'] = "#{lv} backup"
 					job['source'] = lv
 					job['archive'] = true
 					@jobs.push(job)
@@ -72,7 +72,7 @@ class Baremetal
 		@partitions_to_mount.each{|partition|
 			if partition =~ /\/dev\/[shm]d[a-z]*[0-9]+/ && partition != @sysinfo['boot']['partition']
 				job = Hash.new
-				job['name'] = "#{partition} backup"
+				job['job_name'] = "#{partition} backup"
 				job['source'] = partition
 				job['use_lvm'] = false
 				job['archive'] = true

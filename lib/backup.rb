@@ -14,7 +14,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Backup
-	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo
+	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo, :job_name
 	include Add_functions
 	
 	def initialize(source, destination)
@@ -31,6 +31,7 @@ class Backup
 		@mbr = nil
 		@plain = false
 		@sysinfo = nil
+		@job_name = destination
 	end
 	
 	def clean!
@@ -46,10 +47,10 @@ class Backup
 
 	def create!
 		begin
-			@log.write("Backup started - #{Time.now.asctime}")
+			@log.write("Backup job \"#{@job_name}\" started - #{Time.now.asctime}")
 
 			dest_path, dest_type = parse_and_mount(@destination)
-			save_sysinfo!(dest_path, dest_type)
+			save_sysinfo!(dest_path, dest_type) if @sysinfo
 			source_files = parse_source(@source)
 
 			raise "Can't backup multiple sources to one destination file." if source_files.length > 1 && dest_type == 'file'
@@ -267,7 +268,6 @@ class Backup
 				image_size = `zcat #{file} 2>#{zcat_log} |wc -c`
 				zcat_error = IO.read(zcat_log)
 				if !zcat_error.empty?
-				puts zcat_error
 					@log.write(zcat_error)
 					raise "\"#{file}\" archive was corrupted"
 				end
@@ -586,7 +586,7 @@ class Backup
 		if dest_type == 'dir'
 			file = "#{dest_path}/#{hostname}.info"
 		elsif dest_type == 'file'
-			file = "#{File.dirname(dest_path)}}/#{hostname}.info"
+			file = "#{File.dirname(dest_path)}/#{hostname}.info"
 		else
 			raise "Can't save sysinfo: unknown destination type."
 		end

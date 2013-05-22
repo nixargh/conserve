@@ -101,7 +101,7 @@ class Conserve
 		collector = Collector.new
 		@sysinfo = collector.collect
 		@log.write("SysInfo collected.", 'yellow') if @debug
-		save_sysinfo!
+		save_sysinfo! if @params['collect']
 	end
 
 	def save_sysinfo! # saves system information to file 
@@ -127,7 +127,7 @@ class Conserve
 		save_sysinfo!
 		baremetal = Baremetal.new
 		baremetal.sysinfo = @sysinfo
-		baremetal.params = @params
+		baremetal.destination = @params['destination']
 		jobs = baremetal.create_jobs_list
 		jobs.each{|job|
 			job = @params.merge(job)
@@ -147,6 +147,7 @@ class Conserve
 		backup = Backup.new(params['source'], params['destination'])
 		backup.log = @log
 		backup.mbr = true if params['mbr']
+		backup.job_name = params['job_name']
 		backup.lvm = params['use_lvm'] ? @lvm : nil
 		backup.mount_point = params['mount_point'] if params['mount_point']
 		backup.credential_file = params['cred_file'] if params['cred_file']

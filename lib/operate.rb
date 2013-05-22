@@ -82,8 +82,9 @@ Conserve v.#{$version}
 
 Options:
 \t-b\t--baremetal\t\t\t\tdetect what to backup automaticaly;
-\t\t\t\t\t\t\tyou have to point destination folder to store backup files.
-\t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
+\t\t\t\t\t\t\tbackups only devices from fstab;
+\t\t\t\t\t\t\tyou have to point destination folder to store backup files;
+\t\t\t\t\t\t\t--collect used automaticaly.
 \t-s=\t--source='path'\t\t\t\tfull path to block device, file or directory to backup;
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
 \t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. 
@@ -92,6 +93,7 @@ Options:
 \t\t\t\t\t\t\twill be created inside destination directory;
 \t\t\t\t\t\t\tif path isn't smb share then you just use local path to files;
 \t\t\t\t\t\t\t'server' - server name where share is, '/dir/file' - files path on the share.
+\t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
 \t\t--no_lvm\t\t\t\tdo not use LVM snapshot.
 \t-p\t--plain\t\t\t\t\tbackup files without tar as plain tree.
 \t-m=\t--mountdir='/dir'\t\t\troot for temporary directories used to mount network shares or LVM snapshots (\"/mnt\" by default).
