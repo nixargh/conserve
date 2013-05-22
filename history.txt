@@ -1,5 +1,5 @@
 Conserve history.
-version 2.24
+version 2.25
 
 conserve:
 	to do:
@@ -21,6 +21,7 @@ conserve:
 		+	5. Backup of files: New option '-p' or '--plain' to copy files without using tar or gzip as plain tree. '-z' will be ignored when '-p' used.
 		+	6. Backup of files: Set source as comma-separated list of files and/or directories. '*' sign can be used to backup all directory entries as individual sources. 
 		+	7. Baremetal backup option. It's collecting information and doing backup for all partitions.
+		+	8. [BUG] Conserve#save_sysinfo!: can't save if destination is remote place.
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

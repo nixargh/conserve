@@ -14,7 +14,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Backup
-	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm
+	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo
 	include Add_functions
 	
 	def initialize(source, destination)
@@ -30,6 +30,7 @@ class Backup
 		@source_is_blockdev = false
 		@mbr = nil
 		@plain = false
+		@sysinfo = nil
 	end
 	
 	def clean!
@@ -48,6 +49,7 @@ class Backup
 			@log.write("Backup started - #{Time.now.asctime}")
 
 			dest_path, dest_type = parse_and_mount(@destination)
+			save_sysinfo!(dest_path, dest_type)
 			source_files = parse_source(@source)
 
 			raise "Can't backup multiple sources to one destination file." if source_files.length > 1 && dest_type == 'file'
@@ -578,5 +580,20 @@ class Backup
 			@log.write('[FAILED]', 'red')
 			raise "tar creation failed: #{$!}."
 		end
+	end
+
+	def save_sysinfo!(dest_path, dest_type)
+		if dest_type == 'dir'
+			file = "#{dest_path}/#{hostname}.info"
+		elsif dest_type == 'file'
+			file = "#{File.dirname(dest_path)}}/#{hostname}.info"
+		else
+			raise "Can't save sysinfo: unknown destination type."
+		end
+		require 'yaml'
+		File.open(file, 'w'){|file|
+			file.write(@sysinfo.to_yaml)	
+		}
+		@log.write("SysInfo saved.", 'yellow') if @debug
 	end
 end

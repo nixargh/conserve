@@ -46,7 +46,7 @@ class Operate
 				raise "You must enter full path to credential file." if !(params['cred_file'] = value)
 			elsif parameter == '--collect' || parameter == '-cl'
 				params['collect'] = true
-				params['collect_file'] = value
+				params['collect_dir'] = value
 			elsif parameter == '--inform' || parameter == '-i'
 				raise "You must enter full path to config file." if !(params['inform'] = value)
 			elsif parameter == '--job_name' || parameter == '-n'
@@ -100,7 +100,7 @@ Options:
 \t\t--mbr\t\t\t\t\tbackup MBR from device pointed like source.
 \t-cl\t--collect\t\t\t\tstore information about system;
 \t\t\t\t\t\t\tby default path to the file will be \"/destination_dir/fqdn.info\".
-\t\t\t\t\t\t\tif you want to save information to other file you can use it like -cl='dir/file'.
+\t\t\t\t\t\t\tif you want to save information to other file you can use it like -cl='dir'.
 \t-i=\t--inform='/dir/inform.conf'\t\tinform about backup status as described at config file;
 \t\t\t\t\t\t\tif no config file found it will be created.
 \t-n=\t--job_name='Daily MBR Backup'\t\tset display name for backup job.

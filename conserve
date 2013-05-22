@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.7'
+$version = '0.2.1.8'
 #### LICENSE ###################################################################
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>
@@ -32,7 +32,6 @@ class Conserve
 		@log = nil
 		@error = nil
 		@lvm = nil
-		@hostname = `hostname -f`.chomp
 	end
 
 	def run # run all that staff
@@ -102,26 +101,25 @@ class Conserve
 		collector = Collector.new
 		@sysinfo = collector.collect
 		@log.write("SysInfo collected.", 'yellow') if @debug
-		if @params['collect']
-			save_sysinfo!
-		end
+		save_sysinfo!
 	end
 
-	def save_sysinfo! # saves system information to file
-		if @params['collect_file']
-			file = @params['collect_file']
-		elsif @params['baremetal'] || File.directory?(@params['destination'])
-			file = "#{@params['destination']}/#{@hostname}.sysinfo"
-		elsif @params['destination']
-			file = "#{File.dirname(@params['destination'])}/#{@hostname}.sysinfo"
+	def save_sysinfo! # saves system information to file 
+		if @params['collect_dir'] || @params['destination']
+			destination = @params['collect_dir'] ? @params['collect_dir'] : @params['destination']
+			if File.directory?(destination)
+					file = "#{destination}/#{`hostname -f`.chomp.strip}.info"
+					require 'yaml'
+					File.open(file, 'w'){|file|
+						file.write(@sysinfo.to_yaml)	
+					}
+					@log.write("SysInfo saved.", 'yellow') if @debug
+			else
+				@params['sysinfo_save_at_backup'] = true 
+			end
 		else
 			raise "Can't save system information because nor path nor destination not specified."
 		end
-		require 'yaml'
-		File.open(file, 'w'){|file|
-			file.write(@sysinfo.to_yaml)	
-		}
-		@log.write("SysInfo saved.", 'yellow') if @debug
 	end
 	
 	def start_baremetal! # creates and a number of backup jobs to create full backup
@@ -154,6 +152,10 @@ class Conserve
 		backup.credential_file = params['cred_file'] if params['cred_file']
 		backup.archive = true if params['archive']
 		backup.plain = params['plain_files_tree'] if params['plain_files_tree']
+		if params['sysinfo_save_at_backup']
+			backup.sysinfo = @sysinfo
+			@params['sysinfo_save_at_backup'] = false 
+		end
 		backup.create!
 	end
 

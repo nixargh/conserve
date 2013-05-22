@@ -72,4 +72,9 @@ module Add_functions
 			raise "Can't convert #{device} to non_mapper"
 		end
 	end
+
+	def hostname
+		`hostname -f`.chomp.strip
+	end
+
 end

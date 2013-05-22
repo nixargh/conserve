@@ -99,7 +99,8 @@ class Collector
 			backup_files = Array.new
 			Dir.mkdir(backup_dir) if !File.directory?(backup_dir)
 			dir = Dir.open(backup_dir)
-			`vgcfgbackup -f #{backup_dir}/%s 2>1 1>/dev/null`
+			info, error = "vgcfgbackup -f #{backup_dir}/%s"
+			raise "Can't collect LVM info: #{error}." if error
 			dir.each{|file|
 				if file != '.' && file !='..'
 					vg = Hash.new
@@ -255,7 +256,8 @@ class Collector
 
 	def read_partitions(disk) # read partitions table of disk + some of partition attributes
 		partitions = Array.new
-		info, error = runcmd("sfdisk -l #{disk} -d -x 2>1")
+		#info, error = runcmd("sfdisk -l #{disk} -d -x 2>1")
+		info, error = runcmd("sfdisk -l #{disk} -d -x")
 		if !error
 			info.each_line{|line|
 				if line.index('/dev/') == 0
