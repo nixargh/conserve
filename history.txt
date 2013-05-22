@@ -1,17 +1,10 @@
 Conserve history.
-version 2.25
+version 27
 
 conserve:
 	to do:
-			1. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
-
-			What I need to recover full system?
-				1. Hardware disks information.
-				2. Software raid information. (/proc/mdstat)
-				3. Partition table.
-				4. Lvm structure.
-				5. Information of how to mount partition.
-				6. Bootloader information.
+			1. Add option (-e or --exclude)  to exclude devices from baremetal backup.
+			2. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
@@ -22,10 +15,18 @@ conserve:
 		+	6. Backup of files: Set source as comma-separated list of files and/or directories. '*' sign can be used to backup all directory entries as individual sources. 
 		+	7. Baremetal backup option. It's collecting information and doing backup for all partitions.
 		+	8. [BUG] Conserve#save_sysinfo!: can't save if destination is remote place.
+		+	9. Collect class now collect information about device LABEL and resolve 'LABEL=/label' at fstab to "normal device name".  
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.
 		+	2. Collector Class. Collects information about hdd devices, software raids, partitions, lvm and how to mount all this staff.
+			What I need to recover full system?
+				1. Hardware disks information.
+				2. Software raid information. (/proc/mdstat)
+				3. Partition table.
+				4. LVM structure.
+				5. Information of how to mount partition.
+				6. Bootloader information.
 		+	3. --add_module option was removed.
 
 	!!! Version system changes !!!

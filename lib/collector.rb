@@ -46,6 +46,7 @@ class Collector
 				hdd['blocksize'] = get_device_blocksize(disk)
 				hdd['uuid'], hdd['type'] = get_uuid_and_type(disk)
 				hdd['has_grub_mbr'] = find_grub_mbr(disk)
+				hdd['label'] = get_label(disk)
 				hdd_list.push(hdd)
 			end
 		}
@@ -69,6 +70,7 @@ class Collector
 						}
 					end
 				}
+				raid['label'] = get_label(raid['name'])
 				raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
 				md_list.push(raid)
 			end	
@@ -85,6 +87,7 @@ class Collector
 				partitions['partitions'] = read_partitions(hdd['name'])
 				partitions['partitions'].each{|partition|
 					partition['uuid'], partition['type'] = get_uuid_and_type(partition['name'])
+					partition['label'] = get_label(partition)
 				}
 				partition_list.push(partitions)
 			end
@@ -196,6 +199,9 @@ class Collector
 			return find_by_uuid(uuid)
 		elsif device.index('/mapper/')
 			return convert_to_non_mapper(device)	
+		elsif device.upcase.index('LABEL')
+			label = device.split('=')[1]
+			return find_by_label(label)
 		else
 			return device
 		end
@@ -211,6 +217,22 @@ class Collector
 			}
 		}
 		nil
+	end
+
+	def find_by_label(label)
+		@creatures['hdd'].each{|hdd|
+			return hdd['name'] if label == hdd['label']
+		}
+		@creatures['md'].each{|md|
+			return md['name'] if label == md['label']
+		}
+		@creatures['partition'].each{|hdd|
+			hdd['partitions'].each{|partition|
+				return partition['name'] if label == partition['label']
+			}
+		}
+		nil
+		
 	end
 
 	def find_grub_mbr(device) # detect if there is GRUB's info at hdd mbr
@@ -278,5 +300,13 @@ class Collector
 			# stub. need to write alternative detection method for GPT partition table
 		end
 		partitions
+	end
+
+	def get_label(device)
+		info, error = runcmd("e2label #{device}")
+		if info && !error
+			return info.chomp.strip
+		end
+		nil
 	end
 end
