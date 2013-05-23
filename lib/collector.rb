@@ -87,7 +87,7 @@ class Collector
 				partitions['partitions'] = read_partitions(hdd['name'])
 				partitions['partitions'].each{|partition|
 					partition['uuid'], partition['type'] = get_uuid_and_type(partition['name'])
-					partition['label'] = get_label(partition)
+					partition['label'] = get_label(partition['name'])
 				}
 				partition_list.push(partitions)
 			end
@@ -232,7 +232,6 @@ class Collector
 			}
 		}
 		nil
-		
 	end
 
 	def find_grub_mbr(device) # detect if there is GRUB's info at hdd mbr
@@ -305,7 +304,8 @@ class Collector
 	def get_label(device)
 		info, error = runcmd("e2label #{device}")
 		if info && !error
-			return info.chomp.strip
+			info.chomp!.strip!
+			return info if !info.empty?
 		end
 		nil
 	end
