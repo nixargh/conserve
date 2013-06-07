@@ -18,17 +18,22 @@ class Collector
 
 	def initialize
 		# creatures list
-		hdd, md, partition, lvm, mount, boot = Hash.new, Hash.new, Hash.new, Hash.new, Hash.new, Hash.new
+		hdd, md, dmraid, partition, lvm, mount, boot = Array.new, Array.new, Array.new, Array.new, Array.new, Array.new, Array.new
 
 		# Hash of creatures information hashes
-		@creatures = { 'hdd' => hdd, 'md' => md, 'partition' => partition, 'lvm' => lvm}
+		@creatures = { 'hdd' => hdd, 'md' => md, 'dmraid' => dmraid, 'partition' => partition, 'lvm' => lvm, 'mount' => mount, 'boot' => boot}
 	end
 
 	def collect # collect iformation about creatures
 		list_disks!
-		@creatures.sort.each{|creature, value|
-			@creatures[creature] = eval("get_#{creature}_info")
-		}
+#		@creatures.sort.each{|creature, value|
+#			@creatures[creature] = eval("get_#{creature}_info")
+#		}
+		@creatures['hdd'] = get_hdd_info
+		@creatures['md'] = get_md_info
+		@creatures['dmraid'] = get_dmraid_info
+		@creatures['partition'] = get_partition_info
+		@creatures['lvm'] = get_lvm_info
 		@creatures['mount'] = get_mount_info
 		@creatures['boot'] = get_boot_info
 		@creatures
@@ -44,16 +49,16 @@ class Collector
 				hdd['name'] = disk
 				hdd['size'] = size 
 				hdd['blocksize'] = get_device_blocksize(disk)
-				hdd['uuid'], hdd['type'] = get_uuid_and_type(disk)
+				hdd['uuid'], hdd['type'], hdd['label'] = get_uuid_type_label(disk)
 				hdd['has_grub_mbr'] = find_grub_mbr(disk)
-				hdd['label'] = get_label(disk)
+				#hdd['label'] = get_label(disk)
 				hdd_list.push(hdd)
 			end
 		}
 		hdd_list
 	end
 
-	def get_md_info # collect information about software RAID devices
+	def get_md_info # collect information about Linux RAID devices
 		md_list = Array.new
 		@disk_list.each{|disk, size|
 			if disk =~ /\A\/dev\/md\d{1,3}\z/
@@ -70,7 +75,8 @@ class Collector
 						}
 					end
 				}
-				raid['label'] = get_label(raid['name'])
+				raid['uuid'], raid['type'], raid['label'] = get_uuid_type_label(disk)
+				#raid['label'] = get_label(raid['name'])
 				raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
 				md_list.push(raid)
 			end	
@@ -78,16 +84,41 @@ class Collector
 		md_list
 	end
 
+	def get_dmraid_info # collect information about software RAID devices
+		dm_raids = Array.new
+			info, error = runcmd("dmraid -s -c -c -c")
+			info.chomp!.strip!
+			if info != 'no raid disks'
+				info.each_line{|line|
+					line = line.split(':')
+					if !line[0].index('/')
+						raid = Hash.new
+						raid['name'] = get_dmraid_fullname(line[0])
+						raid['raid_lvl'] = raid_lvl_to_number(line[3])
+						raid['devices'] = Array.new
+						raid['size'] = get_device_size(raid['name']) 
+						raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
+						dm_raids.push(raid)
+					else
+						dm_raids.last['devices'].push(line[0])						
+					end
+				}
+			end
+		dm_raids
+	end
+
 	def get_partition_info # collect information about partition tables
 		partition_list = Array.new
-		@creatures['hdd'].each{|hdd|
+		disks = Array.new
+		disks = @creatures['hdd'] + @creatures['dmraid']
+		disks.each{|hdd|
 			if hdd['type'] == nil
 				partitions = Hash.new
 				partitions['disk'] = hdd['name']
 				partitions['partitions'] = read_partitions(hdd['name'])
 				partitions['partitions'].each{|partition|
-					partition['uuid'], partition['type'] = get_uuid_and_type(partition['name'])
-					partition['label'] = get_label(partition['name'])
+					partition['uuid'], partition['type'], partition['label'] = get_uuid_type_label(partition['name'])
+					#partition['label'] = get_label(partition['name'])
 				}
 				partition_list.push(partitions)
 			end
@@ -156,7 +187,7 @@ class Collector
 	def get_boot_info # find where GRUB installed (ignore partitions)
 		bootloader = Hash.new
 		boot_folder_hdd = find_where_boot_folder
-		hdd_and_md = @creatures['hdd'] + @creatures['md']
+		hdd_and_md = @creatures['hdd'] + @creatures['md'] + @creatures['dmraid']
 		hdd_and_md.each{|hdd|
 			if hdd['has_grub_mbr']
 				if hdd['name'] == boot_folder_hdd
@@ -189,22 +220,33 @@ class Collector
 		}
 		device = boot ? boot : root
 		device = to_ndn(device)
-		device =~ /\/dev\/md[0-9]/ ? device : device.chop
+		device =~ /\/dev\/md[0-9]/ ? device : find_partitions_disk?(device)
 	end
 
 	def to_ndn(device) # convert different device path to "normal device name". exp: /dev/data/test or /dev/sda2
 		return nil if !device
 		if device.upcase.index('UUID')
 			uuid = device.split('=')[1]
-			return find_by_uuid(uuid)
+			device = find_by_uuid(uuid)
+			raise "Can't resolv UUID #{uuid} to \"normal device name\"." if !device
 		elsif device.index('/mapper/')
-			return convert_to_non_mapper(device)	
+			device = convert_to_non_mapper(device)
+			raise "Can't resolv mapper name #{device} to \"normal device name\"." if !device
 		elsif device.upcase.index('LABEL')
 			label = device.split('=')[1]
-			return find_by_label(label)
-		else
-			return device
+			device = find_by_label(label)
+			raise "Can't resolv label #{label} to \"normal device name\"." if !device
 		end
+		device
+	end
+
+	def find_partitions_disk?(device)
+		@creatures['partition'].each{|group|
+			group['partitions'].each{|partition|
+				return group['disk'] if partition['name'] == device
+			}
+		}
+		nil
 	end
 
 	def find_by_uuid(uuid) # find hdd or partition by it's UUID
@@ -216,6 +258,9 @@ class Collector
 				return partition['name'] if uuid == partition['uuid']
 			}
 		}
+		@creatures['md'].each{|md|
+                        return md['name'] if uuid == md['uuid']
+                }
 		nil
 	end
 
@@ -257,7 +302,7 @@ class Collector
 		}
 	end
 
-	def get_device_size # size in bytes
+	def get_device_size(dev) # size in bytes
 		`blockdev --getsize64 #{dev}`.chomp.to_i
 	end
 
@@ -265,14 +310,15 @@ class Collector
 		`blockdev --getbsz #{dev}`.chomp.to_i
 	end
 
-	def get_uuid_and_type(device) # get uuid and type of block device
-		uuid, type = nil, nil
+	def get_uuid_type_label(device) # get uuid and type and label of block device
+		uuid, type, label = nil, nil, nil
 		info = `blkid #{device}`.split(' ')
 		info.each{|arg|
 			uuid = arg.split('=')[1].delete('"') if arg.index('UUID')
 			type = arg.split('=')[1].delete('"') if arg.index('TYPE')
+			label = arg.split('=')[1].delete('"') if arg.index('LABEL')
 		}
-		return uuid, type
+		return uuid, type, label
 	end
 
 	def read_partitions(disk) # read partitions table of disk + some of partition attributes
@@ -307,6 +353,32 @@ class Collector
 			info.chomp!.strip!
 			return info if !info.empty?
 		end
+		nil
+	end
+	
+	def raid_lvl_to_number(raid_lvl_string)
+		raid_lvl = nil
+		if raid_lvl_string == 'stripe'
+			raid_lvl = 0
+		elsif raid_lvl_string == 'mirror'
+			raid_lvl = 1
+		elsif raid_lvl_string == 'mirror on top of stripes'
+			raid_lvl = 10
+		elsif raid_lvl_string == 'stripe on top of mirrors'
+			raid_lvl = 01
+		else
+			raise "Unknown software raid type: \"#{raid_lvl_string}\"."
+		end
+		raid_lvl
+	end
+
+	def get_dmraid_fullname(dmraid)
+		require 'find'
+		Find.find('/dev'){|path|
+			if !File.directory?(path)
+				return path if File.basename(path) == dmraid
+			end
+		}
 		nil
 	end
 end
