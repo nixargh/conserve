@@ -84,8 +84,9 @@ class Baremetal
 	def compile_partitions_to_mount! # creates list of devices that figurates at fstab
 		to_mount = Array.new
 		@sysinfo['mount'].each{|device|
+			dest = device['mount_info'][1]
 			device = device['name']
-			if device.index('/dev/') && !device.index('swap') && !device.index('tmp')
+			if device.index('/dev/') && dest != 'swap' && !dest.index('tmp')
 				to_mount.push(device)
 			end
 		}
