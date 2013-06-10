@@ -1,5 +1,5 @@
 Conserve history.
-version 28
+version 29
 
 conserve:
 	to do:
@@ -17,6 +17,8 @@ conserve:
 		+	8. [BUG] Conserve#save_sysinfo!: can't save if destination is remote place.
 		+	9. Collect class now collect information about device LABEL and resolve 'LABEL=/label' at fstab to "normal device name".  
 		+	10. Collect#get_dmraid_info. New method to get information about dmraid devices.
+		+	11. [BUG] Fixed "Conserve#run error: undefined method `chomp!' for nil:NilClass".
+		+	12. [BUG] Fixed "ArgumentError - /data/documents/development/conserve/lib/inform.rb:169:in `compact_log'".
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

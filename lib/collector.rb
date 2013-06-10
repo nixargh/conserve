@@ -87,22 +87,24 @@ class Collector
 	def get_dmraid_info # collect information about software RAID devices
 		dm_raids = Array.new
 			info, error = runcmd("dmraid -s -c -c -c")
-			info.chomp!.strip!
-			if info != 'no raid disks'
-				info.each_line{|line|
-					line = line.split(':')
-					if !line[0].index('/')
-						raid = Hash.new
-						raid['name'] = get_dmraid_fullname(line[0])
-						raid['raid_lvl'] = raid_lvl_to_number(line[3])
-						raid['devices'] = Array.new
-						raid['size'] = get_device_size(raid['name']) 
-						raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
-						dm_raids.push(raid)
-					else
-						dm_raids.last['devices'].push(line[0])						
-					end
-				}
+			if info
+				info.chomp!.strip!
+				if info != 'no raid disks'
+					info.each_line{|line|
+						line = line.split(':')
+						if !line[0].index('/')
+							raid = Hash.new
+							raid['name'] = get_dmraid_fullname(line[0])
+							raid['raid_lvl'] = raid_lvl_to_number(line[3])
+							raid['devices'] = Array.new
+							raid['size'] = get_device_size(raid['name']) 
+							raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
+							dm_raids.push(raid)
+						else
+							dm_raids.last['devices'].push(line[0])						
+						end
+					}
+				end
 			end
 		dm_raids
 	end
