@@ -14,7 +14,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Baremetal
-	attr_accessor :sysinfo, :destination
+	attr_accessor :sysinfo, :destination, :exclude
 	include Add_functions
 
 	def initialize
@@ -27,6 +27,7 @@ class Baremetal
 		compile_boot_backup!
 		compile_lvm_volumes_backup!
 		compile_nonlvm_volumes_backup!
+		exclude! if @exclude
 		@jobs
 	end
 
@@ -85,11 +86,25 @@ class Baremetal
 		to_mount = Array.new
 		@sysinfo['mount'].each{|device|
 			dest = device['mount_info'][1]
+			type = device['mount_info'][2]
 			device = device['name']
-			if device.index('/dev/') && dest != 'swap' && !dest.index('tmp')
+			if device.index('/dev/') && type != 'swap' && !dest.index('tmp')
 				to_mount.push(device)
 			end
 		}
 		@partitions_to_mount = to_mount
+	end
+
+	def exclude! # delete jobs for excluded devices
+		exclude_jobs = Array.new
+		@jobs.each{|job|
+			excludes = @exclude.split(',')
+			excludes.each{|exclude|
+				exclude_jobs.push(job) if job['source'] == exclude
+			}
+		}
+		exclude_jobs.each{|job|
+			@jobs.delete(job)
+		}
 	end
 end

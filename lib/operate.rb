@@ -25,6 +25,8 @@ class Operate
 				exit 0
 			elsif parameter == '--baremetal' || parameter == '-b'
 				params['baremetal'] = true
+			elsif parameter == '--exclude' || parameter == '-e'
+				raise "You must enter device name (at \"normal device name\" format) to exclude." if !(params['exclude'] = value)
 			elsif parameter == '--no_lvm'
 				params['use_lvm'] = false
 			elsif parameter == '--gzip' || parameter == '-z'
@@ -81,10 +83,12 @@ Conserve v.#{$version}
 \t7. Send report by email.
 
 Options:
-\t-b\t--baremetal\t\t\t\tdetect what to backup automaticaly;
+\t-b\t--baremetal\t\t\t\tdetect what to backup automatically;
 \t\t\t\t\t\t\tbackups only devices from fstab;
 \t\t\t\t\t\t\tyou have to point destination folder to store backup files;
-\t\t\t\t\t\t\t--collect used automaticaly.
+\t\t\t\t\t\t\t--collect used automatically.
+\t-e=\t--exclude='device1,device2'\t\texclude devices from baremetal backup;
+\t\t\t\t\t\t\tdevice name must be at \"normal device name\" format, for example \"/dev/vg/lv\".
 \t-s=\t--source='path'\t\t\t\tfull path to block device, file or directory to backup;
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
 \t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. 

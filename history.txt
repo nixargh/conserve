@@ -1,10 +1,12 @@
 Conserve history.
-version 29
+version 31
 
 conserve:
 	to do:
-			1. Add option (-e or --exclude)  to exclude devices from baremetal backup.
-			2. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			1. Rewrite destination to use smb:// prefix for smb shares. New destination format - "protocol://severname/share/path" or just "/path" for local folders.
+			2. Add feature to set destination as rsync://. Add -o argument to set rsync options. ??? If use with -z, don't forget to use special rsync option for gzip. 
+			3. Add feature to set destination as nfs://.
+			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
@@ -15,10 +17,13 @@ conserve:
 		+	6. Backup of files: Set source as comma-separated list of files and/or directories. '*' sign can be used to backup all directory entries as individual sources. 
 		+	7. Baremetal backup option. It's collecting information and doing backup for all partitions.
 		+	8. [BUG] Conserve#save_sysinfo!: can't save if destination is remote place.
-		+	9. Collect class now collect information about device LABEL and resolve 'LABEL=/label' at fstab to "normal device name".  
+		+	9. Collect class now collects information about device LABEL and resolve 'LABEL=/label' at fstab to "normal device name".  
 		+	10. Collect#get_dmraid_info. New method to get information about dmraid devices.
 		+	11. [BUG] Fixed "Conserve#run error: undefined method `chomp!' for nil:NilClass".
 		+	12. [BUG] Fixed "ArgumentError - /data/documents/development/conserve/lib/inform.rb:169:in `compact_log'".
+		+	13. Inform#compact_log fixed for multi-job tasks.
+		+	14. [BUG] Fixed choosing swap for backup when doing baremetal.
+		+	15. New option (-e or --exclude) to exclude devices from baremetal backup.
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

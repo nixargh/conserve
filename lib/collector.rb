@@ -20,7 +20,7 @@ class Collector
 		# creatures list
 		hdd, md, dmraid, partition, lvm, mount, boot = Array.new, Array.new, Array.new, Array.new, Array.new, Array.new, Array.new
 
-		# Hash of creatures information hashes
+		# Hash of creatures information arrays
 		@creatures = { 'hdd' => hdd, 'md' => md, 'dmraid' => dmraid, 'partition' => partition, 'lvm' => lvm, 'mount' => mount, 'boot' => boot}
 	end
 
@@ -242,7 +242,7 @@ class Collector
 		device
 	end
 
-	def find_partitions_disk?(device)
+	def find_partitions_disk?(device) # finds what hdd this partition belongs to
 		@creatures['partition'].each{|group|
 			group['partitions'].each{|partition|
 				return group['disk'] if partition['name'] == device
@@ -266,7 +266,7 @@ class Collector
 		nil
 	end
 
-	def find_by_label(label)
+	def find_by_label(label) # find device by it's label
 		@creatures['hdd'].each{|hdd|
 			return hdd['name'] if label == hdd['label']
 		}
@@ -349,7 +349,7 @@ class Collector
 		partitions
 	end
 
-	def get_label(device)
+	def get_label(device) # gets device label
 		info, error = runcmd("e2label #{device}")
 		if info && !error
 			info.chomp!.strip!
@@ -358,7 +358,7 @@ class Collector
 		nil
 	end
 	
-	def raid_lvl_to_number(raid_lvl_string)
+	def raid_lvl_to_number(raid_lvl_string) # convert string raid level to raid level number
 		raid_lvl = nil
 		if raid_lvl_string == 'stripe'
 			raid_lvl = 0
@@ -374,7 +374,7 @@ class Collector
 		raid_lvl
 	end
 
-	def get_dmraid_fullname(dmraid)
+	def get_dmraid_fullname(dmraid) # resolv dmraid device name to full path
 		require 'find'
 		Find.find('/dev'){|path|
 			if !File.directory?(path)

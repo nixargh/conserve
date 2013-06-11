@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.12'
+$version = '0.2.1.15'
 #### LICENSE ###################################################################
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>
@@ -39,6 +39,7 @@ class Conserve
 			load_libraries!
 			parse_arguments!
 			start_logging!
+			@log.write("Conserve started.",'yellow')
 			collect_sysinfo!
 			if @params['baremetal']
 				start_baremetal!
@@ -128,6 +129,7 @@ class Conserve
 		baremetal = Baremetal.new
 		baremetal.sysinfo = @sysinfo
 		baremetal.destination = @params['destination']
+		baremetal.exclude = @params['exclude']
 		jobs = baremetal.create_jobs_list
 		jobs.each{|job|
 			job = @params.merge(job)
