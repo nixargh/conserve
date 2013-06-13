@@ -364,9 +364,9 @@ class Collector
 			raid_lvl = 0
 		elsif raid_lvl_string == 'mirror'
 			raid_lvl = 1
-		elsif raid_lvl_string == 'mirror on top of stripes'
-			raid_lvl = 10
 		elsif raid_lvl_string == 'stripe on top of mirrors'
+			raid_lvl = 10
+		elsif raid_lvl_string == 'mirror on top of stripes'
 			raid_lvl = 01
 		else
 			raise "Unknown software raid type: \"#{raid_lvl_string}\"."

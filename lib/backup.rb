@@ -17,8 +17,9 @@ class Backup
 	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo, :job_name
 	include Add_functions
 	
-	def initialize(source, destination)
+	def initialize(source, destination, dest_target_type)
 		@destination = destination
+		@dest_target_type = dest_target_type
 		@source = source
 		@share_type = 'smb'
 		@mounted = Hash.new
@@ -49,15 +50,14 @@ class Backup
 		begin
 			@log.write("Backup job \"#{@job_name}\" started - #{Time.now.asctime}")
 
-			dest_path, dest_type = parse_and_mount(@destination)
-			save_sysinfo!(dest_path, dest_type) if @sysinfo
+			dest_path = prepaire_destination(@destination)
+			save_sysinfo!(dest_path) if @sysinfo
 			source_files = parse_source(@source)
-
-			raise "Can't backup multiple sources to one destination file." if source_files.length > 1 && dest_type == 'file'
+			raise "Can't backup multiple sources to one destination file. Not ready yet." if source_files.length > 1 && @dest_target_type == 'file'
 
 			source_files.each{|source_file|
 				@log.write("\tBackup of #{source_file}:", 'yellow')
-				destination_file = create_destination(dest_path, dest_type, source_file)
+				destination_file = create_destination(dest_path, source_file)
 
 				if File.blockdev?(source_file)
 				# do block device backup
@@ -108,6 +108,38 @@ class Backup
 	private
 ###########
 
+	def prepaire_destination(destination) # detects what is destination, mounts it etc.
+		destination.chop! if destination[-1] == '/'
+		dest_type, dest_path = parse_destination(destination)
+		return destination if dest_type == 'local'
+
+		if @dest_target_type == 'file'
+			dest_file = File.basename(dest_path)
+			dest_path = "/#{File.dirname(dest_path)}"
+		end
+		if dest_type == 'smb' || dest_type == 'nfs'
+			dest_path = mount(dest_path, dest_type)
+		elsif dest_type == 'rsync'
+			raise "rsync backup is under construction."
+		else
+			raise "Unknown type of destination: #{dest_type}."
+		end
+		dest_path = "#{dest_path}/#{dest_file}" if @dest_target_type == 'file'
+		dest_path
+	end
+
+	def parse_destination(destination) # split destination to protocol and path
+		raise "Destination isn't specified." if !destination || destination.empty?
+		destination.gsub!('\\', '/')
+		if destination.index('://')
+			type, path = destination.split(':', 2)
+		else
+			type = 'local'
+			path = destination
+		end
+		return type, path
+	end
+
 	def parse_source(source)
 		source_files = Array.new
 		source.split(',').each{|source|
@@ -140,61 +172,146 @@ class Backup
 		source_file
 	end
 
-	def create_destination(dest_path, dest_type, source_path)
+	def create_destination(dest_path, source_path)
 		destination_file = nil
-		if dest_type == 'file'
+		if @dest_target_type == 'file'
 			destination_file = dest_path
-		elsif dest_type == 'dir'
+		elsif @dest_target_type == 'dir'
 			destination_file = "#{dest_path}/#{File.basename(source_path)}"
 		end
 		destination_file
 	end
 
-	def parse_and_mount(path) # parse path, convert to usefull format and return new path + type of destination: file or directory
-		begin
-			raise "path is \"nil\"" if !path
-			server, directory, file = parse_path(path)
-			if server
-				remote_directory = "//#{server}#{directory}"
-				mount_point = mount(remote_directory, 'smb')
-				path  = "#{mount_point}/#{file}"
-				type = File.directory?(path) ? 'dir' : 'file'
-			else
-				if file
-					path = "#{directory}/#{file}"
-					type = 'file'
+	def mount(what, type, where = @mount_point)
+		if @mounted[what]
+			path = @mounted[what]
+			@log.write("\t\tDevice #{what} already mounted at #{path}.")
+		else
+			if File.directory?(where)
+				if type == 'smb'
+					path = mount_smb(what, where)
+				elsif type == 'nfs'
+					path = mout_nfs(what, whare)
+				elsif type == 'local'
+					path = mount_local(what, where)
 				else
-					path = directory
-					type = 'dir'
+					raise "Can't work with that mount type: #{type}"
 				end
+			else
+				raise "root mount directory \"#{where}\" not found or not a directory"
 			end
-			path.chop! if path[-1] == '/'
-			return path, type
-		rescue
-			raise "parse_and_mount error: #{$!}"
 		end
+		path
+	end	
+
+	def mount_smb(what, where) # mounts smb or share
+		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if !File.exist?(`which 'mount.cifs'`.chomp)
+		@log.write_noel("\t\tMounting SMB share: ")
+		server, path = what[2..what.length].split('/',2)
+		if check_online(server)[0] == 0
+			random_dir = create_random_dir(where)
+			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
+			create_cred_file if File.exist?(@credential_file) == false
+			mount_stat = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
+			mount_check = check_mount_stat(mount_stat, what, mount_dir)
+			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
+			test_file = "#{path}/test_file"
+			begin
+				File.open(test_file, 'w'){|file|
+					file.puts('test')
+				}
+				File.unlink(test_file)
+			rescue
+				raise "Can't create file at mounted share \"#{what}\". Perhaps \"#{File.basename(what)}\" directory doesn't exist."
+			end
+		else
+			raise "#{server} isn't online."
+		end
+		path
 	end
 
-	def parse_path(path) # divide path to file on server part and path part etc
-		server, directory, file = nil, nil, nil
-		path.gsub!('\\', '/')
-		if path.index('|')
-			path = path.split('|')
-			server = path[0]
-			file = File.basename(path[1])
-			directory = File.dirname(path[1])
-		else
-			if File.directory?(path)
-				directory = path
-			elsif File.directory?(File.dirname(path))
-				directory = File.dirname(path)
-				file = File.basename(path)
-			else
-				raise "path \"#{path}\" not found."
-			end
-		end
-		return server, directory, file
+	def mount_nfs(what, where) # mounts nfs share
+		raise "NFS under construction."
 	end
+
+	def mount_local(what, where) # mounts local device
+		@log.write_noel("\t\tMounting local disk: ")
+		random_dir = create_random_dir(where)
+		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
+		mount_stat = runcmd("mount #{what} #{mount_dir}")
+		mount_check = check_mount_stat(mount_stat, what, mount_dir)
+		mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
+		path
+	end
+	
+	def check_mount_stat(mount_stat, what, mount_dir)
+		begin
+			info, error = mount_stat
+			status = 0
+			@mounted[what] = mount_dir
+			if error
+				@log.write("#{what} NOT mounted to #{mount_dir} - ")
+				@log.write("[FAILED]", 'red')
+				raise error
+			elsif info && !error
+				@log.write_noel("#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
+				@log.write("[OK]", 'green')
+			else
+				@log.write_noel("#{what} mounted to #{mount_dir}. - ")
+				@log.write("[OK]", 'green')
+			end
+		rescue
+			status = 1
+			error = $!
+		end
+		result = [status, error]
+	end
+#	def parse_and_mount(path) # parse path, convert to usefull format and return new path + type of destination: file or directory
+#		begin
+#			raise "path is \"nil\"" if !path
+#			server, directory, file = parse_path(path)
+#			if server
+#				remote_directory = "//#{server}#{directory}"
+#				mount_point = mount(remote_directory, 'smb')
+#				path  = "#{mount_point}/#{file}"
+#				type = File.directory?(path) ? 'dir' : 'file'
+#			else
+#				if file
+#					path = "#{directory}/#{file}"
+#					type = 'file'
+#				else
+#					path = directory
+#					type = 'dir'
+#				end
+#			end
+#			path.chop! if path[-1] == '/'
+#			return path, type
+#		rescue
+#			raise "parse_and_mount error: #{$!}"
+#		end
+#	end
+#
+#	def parse_path(path) # divide path to file on server part and path part etc
+#		server, directory, file = nil, nil, nil
+#		path.gsub!('\\', '/')
+#		if path.index('|')
+#			path = path.split('|')
+#			server = path[0]
+#			file = File.basename(path[1])
+#			directory = File.dirname(path[1])
+#		else
+#			if File.directory?(path)
+#				directory = path
+#			elsif File.directory?(File.dirname(path))
+#				directory = File.dirname(path)
+#				file = File.basename(path)
+#			else
+#				raise "path \"#{path}\" not found."
+#			end
+#		end
+#		return server, directory, file
+#	end
+
 	def find_symlink(file)
 		path = String.new
 		symlink = nil
@@ -360,84 +477,6 @@ class Backup
 		result = [status, error, mount_dir]
 	end
 	
-	def mount(what, type, where = @mount_point)
-		if @mounted[what]
-			path = @mounted[what]
-			@log.write("\t\tDevice #{what} already mounted at #{path}.")
-		else
-			if File.directory?(where)
-				if type == 'smb'
-					path = mount_smb(what, where, type)
-				elsif type == 'local'
-					path = mount_local(what, where, type)
-				else
-					raise "Can't work with that mount type: #{type}"
-				end
-			else
-				raise "root mount directory \"#{where}\" not found or not a directory"
-			end
-		end
-		path
-	end	
-
-	def mount_smb(what, where, type) # mounts smb or cifs share
-		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if !File.exist?(`which 'mount.cifs'`.chomp)
-		@log.write_noel("\t\tMounting SMB share: ")
-		server = (what.split("/"))[2]
-		if check_online(server)[0] == 0
-			random_dir = create_random_dir(where)
-			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
-			create_cred_file if File.exist?(@credential_file) == false
-			mount_stat = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
-			mount_check = check_mount_stat(mount_stat, what, mount_dir)
-			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
-			test_file = "#{path}/test_file"
-			begin
-				File.open(test_file, 'w'){|file|
-					file.puts('test')
-				}
-				File.unlink(test_file)
-			rescue
-				raise "Can't create file at mounted share \"#{what}\". Perhaps \"#{File.basename(what)}\" directory doesn't exist."
-			end
-		else
-			raise "#{what[0]} isn't online."
-		end
-		path
-	end
-
-	def mount_local(what, where, type)
-		@log.write_noel("\t\tMounting local disk: ")
-		random_dir = create_random_dir(where)
-		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
-		mount_stat = runcmd("mount #{what} #{mount_dir}")
-		mount_check = check_mount_stat(mount_stat, what, mount_dir)
-		mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
-		path
-	end
-	
-	def check_mount_stat(mount_stat, what, mount_dir)
-		begin
-			info, error = mount_stat
-			status = 0
-			@mounted[what] = mount_dir
-			if error
-				@log.write("#{what} NOT mounted to #{mount_dir} - ")
-				@log.write("[FAILED]", 'red')
-				raise error
-			elsif info && !error
-				@log.write_noel("#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
-				@log.write("[OK]", 'green')
-			else
-				@log.write_noel("#{what} mounted to #{mount_dir}. - ")
-				@log.write("[OK]", 'green')
-			end
-		rescue
-			status = 1
-			error = $!
-		end
-		result = [status, error]
-	end
 
 	def check_online(server)
 		begin
@@ -508,9 +547,9 @@ class Backup
 			@log.write("\t\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow', true)
 			status = 0
 			error = nil
-			@log.write("\t\t\t\tEnter username to access shared resource: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\tEnter username to access shared resource: ", 'sky_blue', true)
 			username = $stdin.gets.chomp
-			@log.write("\t\t\t\tEnter password: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\tEnter password: ", 'sky_blue', true)
 			system "stty -echo"
 			password = $stdin.gets.chomp
 			system "stty echo"
@@ -582,10 +621,10 @@ class Backup
 		end
 	end
 
-	def save_sysinfo!(dest_path, dest_type)
-		if dest_type == 'dir'
+	def save_sysinfo!(dest_path)
+		if @dest_target_type == 'dir'
 			file = "#{dest_path}/#{hostname}.info"
-		elsif dest_type == 'file'
+		elsif @dest_target_type == 'file'
 			file = "#{File.dirname(dest_path)}/#{hostname}.info"
 		else
 			raise "Can't save sysinfo: unknown destination type."

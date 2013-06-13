@@ -40,8 +40,12 @@ class Operate
 				params['plain_files_tree'] = true
 			elsif parameter == '--source' || parameter == '-s'
 				raise "You must enter source path." if !(params['source'] = value)
-			elsif parameter == '--destination' || parameter == '-d'
+			elsif parameter == '--dest_file' || parameter == '-d'
 				raise "You must enter destination path." if !(params['destination'] = value)
+				params['dest_target_type'] = 'file'
+			elsif parameter == '--dest_dir' || parameter == '-D'
+				raise "You must enter destination path." if !(params['destination'] = value)
+				params['dest_target_type'] = 'dir'
 			elsif parameter == '--mountdir' || parameter == '-m'
 				raise "You must enter root mount directory." if !(params['mountdir'] = value)
 			elsif parameter == '--credential' || parameter == '-c'
@@ -92,11 +96,14 @@ Options:
 \t-s=\t--source='path'\t\t\t\tfull path to block device, file or directory to backup;
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
 \t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. 
-\t-d=\t--destination='server|/dir[/file]'\tfull path where to store backup;
-\t\t\t\t\t\t\tif 'file' not specified than new files, with names equals to source names,
-\t\t\t\t\t\t\twill be created inside destination directory;
-\t\t\t\t\t\t\tif path isn't smb share then you just use local path to files;
-\t\t\t\t\t\t\t'server' - server name where share is, '/dir/file' - files path on the share.
+\t-d=\t--dest_file='[type://server]/file'\tfull file path where to store backup;
+\t\t\t\t\t\t\ttypes: smb (nfs, rsync under development)
+\t\t\t\t\t\t\tif file exist it is going to be overwrited;
+\t\t\t\t\t\t\tif source is number of files than all backup files will be added to \"destination.tar\" file.
+\t-D=\t--dest_dir='[type://server]/directory'\tfull directory path where to store backup;
+\t\t\t\t\t\t\ttypes: smb (nfs, rsync under development)
+\t\t\t\t\t\t\ttarget directory must exist;
+\t\t\t\t\t\t\tbackup files names will be constructed from sources names.
 \t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
 \t\t--no_lvm\t\t\t\tdo not use LVM snapshot.
 \t-p\t--plain\t\t\t\t\tbackup files without tar as plain tree.

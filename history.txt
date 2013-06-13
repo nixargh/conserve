@@ -1,5 +1,5 @@
 Conserve history.
-version 31
+version 32
 
 conserve:
 	to do:
@@ -7,6 +7,9 @@ conserve:
 			2. Add feature to set destination as rsync://. Add -o argument to set rsync options. ??? If use with -z, don't forget to use special rsync option for gzip. 
 			3. Add feature to set destination as nfs://.
 			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+
+	0.2.2
+			1.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.

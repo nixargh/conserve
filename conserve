@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.15'
+$version = '0.2.2.1'
 #### LICENSE ###################################################################
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>
@@ -128,7 +128,12 @@ class Conserve
 		save_sysinfo!
 		baremetal = Baremetal.new
 		baremetal.sysinfo = @sysinfo
-		baremetal.destination = @params['destination']
+		if @params['dest_target_type'] == 'file'
+			dest = File.dirname(@params['destination'])
+		elsif @params['dest_target_type'] == 'dir'
+			dest = @params['destination']
+		end
+		baremetal.destination = dest
 		baremetal.exclude = @params['exclude']
 		jobs = baremetal.create_jobs_list
 		jobs.each{|job|
@@ -146,7 +151,7 @@ class Conserve
 	def start_backup!(params=@params) # runs backup job
 		@log.write("Backup started.", 'yellow') if @debug
 		raise "You have to specify source and destination for backup." if !params['source'] || !params['destination']
-		backup = Backup.new(params['source'], params['destination'])
+		backup = Backup.new(params['source'], params['destination'], params['dest_target_type'])
 		backup.log = @log
 		backup.mbr = true if params['mbr']
 		backup.job_name = params['job_name']
