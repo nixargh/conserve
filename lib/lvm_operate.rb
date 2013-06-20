@@ -38,7 +38,7 @@ class LVM_operate
 			if info
 				@log.write_noel("\t\t\tDeleting snapshot #{snapshot} - ")
 				@log.write('[OK]', 'green')
-#				@snapshots_created.delete(snapshot)
+				@snapshots_created.delete(snapshot)
 			else
 				@log.write_noel("\t\t\tCan't delete #{snapshot} snapshot: #{error}.  - ")
 				@log.write('[FAILED]', 'red')
