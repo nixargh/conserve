@@ -35,7 +35,7 @@ class Backup
 		@job_name = destination
 	end
 	
-	def clean!
+	def clean! # cleans after backups
 		@log.write("\t\tCleaning after Backup:", 'yellow')
 		@mounted.each_value{|directory|
 			umount!(directory)
@@ -46,13 +46,16 @@ class Backup
 		@lvm.clean! if @lvm
 	end
 
-	def create!
+	def create! # creates backups
 		begin
 			@log.write("Backup job \"#{@job_name}\" started - #{Time.now.asctime}")
 
 			dest_path = prepaire_destination(@destination)
+
 			save_sysinfo!(dest_path) if @sysinfo
-			source_files = parse_source(@source)
+
+			source_files = prepaire_source(@source)
+
 			raise "Can't backup multiple sources to one destination file. Not ready yet." if source_files.length > 1 && @dest_target_type == 'file'
 
 			source_files.each{|source_file|
@@ -111,20 +114,30 @@ class Backup
 	def prepaire_destination(destination) # detects what is destination, mounts it etc.
 		destination.chop! if destination[-1] == '/'
 		dest_type, dest_path = parse_destination(destination)
-		return destination if dest_type == 'local'
-
-		if @dest_target_type == 'file'
-			dest_file = File.basename(dest_path)
-			dest_path = "/#{File.dirname(dest_path)}"
-		end
-		if dest_type == 'smb' || dest_type == 'nfs'
-			dest_path = mount(dest_path, dest_type)
-		elsif dest_type == 'rsync'
-			raise "rsync backup is under construction."
+		if dest_type == 'local'
+			if @dest_target_type == 'dir'
+				if !File.directory?(dest_path)
+					begin
+						Dir.mkdir(dest_path)
+					rescue
+						raise "Distination directory not found and can't be created: #{dest_path}."
+					end
+				end
+			end
 		else
-			raise "Unknown type of destination: #{dest_type}."
+			if @dest_target_type == 'file'
+				dest_file = File.basename(dest_path)
+				dest_path = "/#{File.dirname(dest_path)}"
+			end
+			if dest_type == 'smb' || dest_type == 'nfs'
+				dest_path = mount(dest_path, dest_type)
+			elsif dest_type == 'rsync'
+				raise "rsync backup is under construction."
+			else
+				raise "Unknown type of destination: #{dest_type}."
+			end
+			dest_path = "#{dest_path}/#{dest_file}" if @dest_target_type == 'file'
 		end
-		dest_path = "#{dest_path}/#{dest_file}" if @dest_target_type == 'file'
 		dest_path
 	end
 
@@ -140,7 +153,17 @@ class Backup
 		return type, path
 	end
 
-	def parse_source(source)
+	def create_destination(dest_path, source_path) # creates destination path; depends on source name in case of directory
+		destination_file = nil
+		if @dest_target_type == 'file'
+			destination_file = dest_path
+		elsif @dest_target_type == 'dir'
+			destination_file = "#{dest_path}/#{File.basename(source_path)}"
+		end
+		destination_file
+	end
+
+	def prepaire_source(source) # return array of sources path
 		source_files = Array.new
 		source.split(',').each{|source|
 			source.strip!
@@ -151,38 +174,18 @@ class Backup
 					Dir.entries(top_dir).each{|file|
 						if file != '.' && file !='..'
 							file = "#{top_dir}/#{file}"
-							source_files.push(get_source(file))
+							source_files.push(file)
 						end
 					}
 				else
-					source_files.push(get_source(source))
+					source_files.push(source)
 				end
 			end
 		}
 		source_files
 	end
 
-	def get_source(source)
-		if File.blockdev?(source)
-			source_file = source
-		else
-			src_path, src_type = parse_and_mount(source)
-			source_file = src_path
-		end
-		source_file
-	end
-
-	def create_destination(dest_path, source_path)
-		destination_file = nil
-		if @dest_target_type == 'file'
-			destination_file = dest_path
-		elsif @dest_target_type == 'dir'
-			destination_file = "#{dest_path}/#{File.basename(source_path)}"
-		end
-		destination_file
-	end
-
-	def mount(what, type, where = @mount_point)
+	def mount(what, type, where = @mount_point) # mount destinations of different types
 		if @mounted[what]
 			path = @mounted[what]
 			@log.write("\t\tDevice #{what} already mounted at #{path}.")
@@ -244,7 +247,7 @@ class Backup
 		path
 	end
 	
-	def check_mount_stat(mount_stat, what, mount_dir)
+	def check_mount_stat(mount_stat, what, mount_dir) # analize mount feedback information
 		begin
 			info, error = mount_stat
 			status = 0
@@ -339,20 +342,15 @@ class Backup
 	def do_snapshot(lvm_lv) # do snapshot of LVM Logical Volume
 		lvm_lv_snapshot = nil
 		@log.write("\t\tUsing LVM (by default):", 'yellow')
-		#lvm_lv_snapshot = "#{lvm_lv}_backup"
-		#if @lvm.snapshots_created.index(lvm_lv_snapshot) && File.exist?(lvm_lv_snapshot)
-		#	@log.write("\t\tSnapshot of #{lvm_lv} named #{lvm_lv_snapshot} exist.")
-		#else
-			@log.write_noel("\t\t\tCreating snapshot of #{lvm_lv} - ") 
-			create_snapshot_result = @lvm.create_snapshot(lvm_lv)
-			if create_snapshot_result[0] == 0
-				@log.write('[OK]', 'green')
-				lvm_lv_snapshot = create_snapshot_result[2]
-			else
-				@log.write('[FAILED]', 'red')
-				raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
-			end
-		#end
+		@log.write_noel("\t\t\tCreating snapshot of #{lvm_lv} - ") 
+		create_snapshot_result = @lvm.create_snapshot(lvm_lv)
+		if create_snapshot_result[0] == 0
+			@log.write('[OK]', 'green')
+			lvm_lv_snapshot = create_snapshot_result[2]
+		else
+			@log.write('[FAILED]', 'red')
+			raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
+		end
 		lvm_lv_snapshot
 	end
 	
@@ -478,7 +476,7 @@ class Backup
 	end
 	
 
-	def check_online(server)
+	def check_online(server) # ping the server to check if it is online
 		begin
 			if server == nil
 				raise 'Nothing to check, because "server" is nil.'
@@ -502,47 +500,47 @@ class Backup
 		result = [status, error]
 	end
 	
-	def check_mounted(device)
-		begin
-			status = 0
-			mounted = false
-			mtab_list = `cat /etc/mtab`
-			mtab_list.each_line{|line|
-				mounted_device = line.split(" ")[0]
-				if mounted_device.index(device)
-					mounted = true
-				else
-					if mounted_device.index("mapper")
-						splited_volume = mounted_device.split("/")
-						volume_length = splited_volume.length
-						lvm_data = splited_volume[volume_length - 1].split("-")
-						volume = "/dev/#{lvm_data[0]}/#{lvm_data[1]}"
-						mounted = true if volume.index(device)
-					end
-				end	
-			}
-			raise "#{device} not mounted" if !mounted
-		rescue
-			status = 1
-			error = $!
-		end
-		result = [status, error]
-	end
+#	def check_mounted(device) # checks if device mounted somewhere
+#		begin
+#			status = 0
+#			mounted = false
+#			mtab_list = `cat /etc/mtab`
+#			mtab_list.each_line{|line|
+#				mounted_device = line.split(" ")[0]
+#				if mounted_device.index(device)
+#					mounted = true
+#				else
+#					if mounted_device.index("mapper")
+#						splited_volume = mounted_device.split("/")
+#						volume_length = splited_volume.length
+#						lvm_data = splited_volume[volume_length - 1].split("-")
+#						volume = "/dev/#{lvm_data[0]}/#{lvm_data[1]}"
+#						mounted = true if volume.index(device)
+#					end
+#				end	
+#			}
+#			raise "#{device} not mounted" if !mounted
+#		rescue
+#			status = 1
+#			error = $!
+#		end
+#		result = [status, error]
+#	end
+#	
+#	def where_mounted?(partition) # find where partition is mounted
+#		partition = File.readlink(partition) if File.symlink?(partition)
+#		partition = partition.gsub('..','/dev')
+#		root = nil
+#		IO.read('/etc/mtab').each_line{|line|
+#			line.chomp!
+#			line = line.split(" ")
+#			root = line[1] if line[0] == partition
+#			#puts "partition = #{partition}\t\tline[0] = #{line[0]}\t\tline[1] = #{line[1]}\t\troot = #{root}\n"
+#		}
+#		root ? root : (raise "Can't find where #{partition} mounted")
+#	end
 	
-	def where_mounted?(partition)
-		partition = File.readlink(partition) if File.symlink?(partition)
-		partition = partition.gsub('..','/dev')
-		root = nil
-		IO.read('/etc/mtab').each_line{|line|
-			line.chomp!
-			line = line.split(" ")
-			root = line[1] if line[0] == partition
-			#puts "partition = #{partition}\t\tline[0] = #{line[0]}\t\tline[1] = #{line[1]}\t\troot = #{root}\n"
-		}
-		root ? root : (raise "Can't find where #{partition} mounted")
-	end
-	
-	def create_cred_file
+	def create_cred_file # ask to enter credentials for remote destination
 		begin
 			@log.write("\t\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow', true)
 			status = 0
@@ -570,7 +568,7 @@ class Backup
 		result = [status, error]
 	end
 
-	def create_file_copy!(source_file, destination_file)
+	def create_file_copy!(source_file, destination_file) # copy file from to
 		@log.write_noel("\t\tRunning copy of #{source_file} to #{destination_file} - ")
 		begin
 			FileUtils.copy_entry(source_file, destination_file, preserve = true, remove_destination = true)
@@ -621,7 +619,7 @@ class Backup
 		end
 	end
 
-	def save_sysinfo!(dest_path)
+	def save_sysinfo!(dest_path) # saves system information if it can't be saved early
 		if @dest_target_type == 'dir'
 			file = "#{dest_path}/#{hostname}.info"
 		elsif @dest_target_type == 'file'

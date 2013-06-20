@@ -164,7 +164,7 @@ class Inform
 		info_length = info.length
 		if num_of_lines == 'last'
 			first_line = info.rindex{|line|
-				/Conserve started./ =~ line
+				/Conserve started/ =~ line
 			}
 			info_tail = info[first_line..info_length-1]
 		else
