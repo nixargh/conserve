@@ -1,0 +1,65 @@
+Intergation Tests:
+	options:
+		1. baremetal
+			a. true
+			b. false
+		2. exclude from baremetal
+			a. device
+			b. file
+		3. source
+			a. phsical device
+			b. partition
+			c. lvm logical volume
+			d. dmraid device
+			e. mdraid device
+			f. file
+				1. with lvm
+				2. without lvm
+			g. file archived
+				1. with lvm
+				2. without lvm
+			h. file plain
+				1. with lvm
+				2. without lvm
+			i. multiple files as full path
+				1. with lvm
+				2. without lvm
+			j. multiple files with *
+				1. with lvm
+				2. without lvm
+			k. all other options combinations
+		4. destination
+			a. local
+				1. file
+				2. directory
+			b. smb
+				1. file
+				2. directory
+			c. nfs
+				1. file
+				2. directory
+		5. log
+		6. mountdir
+			a. default location
+			b. custom location
+		7. credentials
+			a. default location
+			b. custom location
+		8. mbr
+		9. collect sysinfo
+			a. default location
+			b. custom location
+		8. mbr
+		10. inform
+			a. authenticated
+			b. anonymous 
+			c. with TLS
+			d. without TLS
+			e. include log
+			f. exclude log
+		11. job name
+			a. default
+			b. custom
+		12. help
+		13. version
+		14. debug

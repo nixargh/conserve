@@ -1,0 +1,17 @@
+cp
+dd
+df
+dmraid
+e2label
+fdisk
+lvcreate
+lvdisplay
+lvremove
+mount
+mount.cifs
+mount.nfs
+sfdisk
+tar
+umount
+vgcfgbackup
+vgdisplay

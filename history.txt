@@ -1,10 +1,11 @@
 Conserve history.
-version 34
+version 35
 
 conserve:
 	to do:
 			1. Add feature to set destination as rsync://. Add -o argument to set rsync options. ???If use with -z, don't forget to use special rsync option for gzip.???
-			2. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			2. Add backup of multiple sources to one file.
+			3. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.

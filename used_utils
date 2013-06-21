@@ -1,7 +1,0 @@
-umount
-df
-mount
-mount.cifs
-lvdisplay
-dd
-
