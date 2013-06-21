@@ -43,16 +43,23 @@ module Add_functions
 		fromated_size
 	end
 
-	def runcmd(cmd) # NEW VERSION OF "cmd_output". Get information after running external utility
+	def runcmd(cmd) # gets information after running external utility
 		begin
 			temp_log_err = "/tmp/conseve_cmd_err_#{rand(10000)}"
 			temp_log = "/tmp/conseve_cmd_#{rand(10000)}"
-			`#{cmd} 2>#{temp_log_err} 1>#{temp_log}`
+			temp_exit_code = "/tmp/conseve_exit_code_#{rand(10000)}"
+			`#{cmd} 2>#{temp_log_err} 1>#{temp_log}; echo $? > #{temp_exit_code}`
 			cmd_error = IO.read(temp_log_err)
 			cmd_info = IO.read(temp_log)
-			cmd_error = nil if cmd_error.length == 0
-			cmd_info = nil if cmd_info.length == 0
-			return cmd_info, cmd_error
+			exit_code = IO.read(temp_exit_code)
+			cmd_error = nil if cmd_error.empty?
+			cmd_info = nil if cmd_info.empty?
+			if exit_code.empty?
+				exit_code = nil
+			else
+				exit_code = exit_code.chomp.to_i
+			end
+			return cmd_info, cmd_error, exit_code
 		rescue
 			raise "runcmd: #{$!}"
 		ensure

@@ -194,7 +194,7 @@ class Backup
 				if type == 'smb'
 					path = mount_smb(what, where)
 				elsif type == 'nfs'
-					path = mout_nfs(what, whare)
+					path = mount_nfs(what, where)
 				elsif type == 'local'
 					path = mount_local(what, where)
 				else
@@ -209,23 +209,26 @@ class Backup
 
 	def mount_smb(what, where) # mounts smb or share
 		raise "You need to install \"mount.cifs\" (\"cifs-utils\" package on Ubuntu, \"cifs-mount\" on SLES) to mount SMB shares" if !File.exist?(`which 'mount.cifs'`.chomp)
-		@log.write_noel("\t\tMounting SMB share: ")
+		@log.write("\t\tMounting SMB share: ", 'yellow')
 		server, path = what[2..what.length].split('/',2)
-		if check_online(server)[0] == 0
+		if check_online(server)
 			random_dir = create_random_dir(where)
 			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
 			create_cred_file if File.exist?(@credential_file) == false
 			mount_stat = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
 			mount_check = check_mount_stat(mount_stat, what, mount_dir)
 			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
+			@log.write_noel("\t\t\tTesting share is writable - ")
 			test_file = "#{path}/test_file"
 			begin
 				File.open(test_file, 'w'){|file|
 					file.puts('test')
 				}
 				File.unlink(test_file)
+				@log.write('[OK]', 'green')
 			rescue
-				raise "Can't create file at mounted share \"#{what}\". Perhaps \"#{File.basename(what)}\" directory doesn't exist."
+				@log.write('[FAILED}', 'red')
+				raise "File creation test on share #{what} failed: #{$!}."
 			end
 		else
 			raise "#{server} isn't online."
@@ -234,11 +237,37 @@ class Backup
 	end
 
 	def mount_nfs(what, where) # mounts nfs share
-		raise "NFS under construction."
+		raise "You need to install \"mount.nfs\" (\"nfs-common\" package on Ubuntu) to mount SMB shares" if !File.exist?(`which 'mount.nfs'`.chomp)
+		@log.write("\t\tMounting NFS share: ", 'yellow')
+		server, path = what[2..what.length].split('/',2)
+		what = "#{server}:/#{path}"
+		if check_online(server)
+			random_dir = create_random_dir(where)
+			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
+			mount_bin = File.exist?(`which 'mount.nfs4'`.chomp) ? "mount.nfs4" : "mount.nfs"
+			mount_stat = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
+			mount_check = check_mount_stat(mount_stat, what, mount_dir)
+			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
+			@log.write_noel("\t\t\tTesting share is writable - ")
+			test_file = "#{path}/test_file"
+			begin
+				File.open(test_file, 'w'){|file|
+					file.puts('test')
+				}
+				File.unlink(test_file)
+				@log.write('[OK]', 'green')
+			rescue
+				@log.write('[FAILED}', 'red')
+				raise "File creation test on share #{what} failed: #{$!}."
+			end
+		else
+			raise "#{server} isn't online."
+		end
+		path
 	end
 
 	def mount_local(what, where) # mounts local device
-		@log.write_noel("\t\tMounting local disk: ")
+		@log.write("\t\tMounting local disk: ", 'yellow')
 		random_dir = create_random_dir(where)
 		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
 		mount_stat = runcmd("mount #{what} #{mount_dir}")
@@ -253,14 +282,14 @@ class Backup
 			status = 0
 			@mounted[what] = mount_dir
 			if error
-				@log.write("#{what} NOT mounted to #{mount_dir} - ")
+				@log.write("\t\t\t#{what} NOT mounted to #{mount_dir} - ")
 				@log.write("[FAILED]", 'red')
 				raise error
 			elsif info && !error
-				@log.write_noel("#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
+				@log.write_noel("\t\t\t#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
 				@log.write("[OK]", 'green')
 			else
-				@log.write_noel("#{what} mounted to #{mount_dir}. - ")
+				@log.write_noel("\t\t\t#{what} mounted to #{mount_dir}. - ")
 				@log.write("[OK]", 'green')
 			end
 		rescue
@@ -269,51 +298,6 @@ class Backup
 		end
 		result = [status, error]
 	end
-#	def parse_and_mount(path) # parse path, convert to usefull format and return new path + type of destination: file or directory
-#		begin
-#			raise "path is \"nil\"" if !path
-#			server, directory, file = parse_path(path)
-#			if server
-#				remote_directory = "//#{server}#{directory}"
-#				mount_point = mount(remote_directory, 'smb')
-#				path  = "#{mount_point}/#{file}"
-#				type = File.directory?(path) ? 'dir' : 'file'
-#			else
-#				if file
-#					path = "#{directory}/#{file}"
-#					type = 'file'
-#				else
-#					path = directory
-#					type = 'dir'
-#				end
-#			end
-#			path.chop! if path[-1] == '/'
-#			return path, type
-#		rescue
-#			raise "parse_and_mount error: #{$!}"
-#		end
-#	end
-#
-#	def parse_path(path) # divide path to file on server part and path part etc
-#		server, directory, file = nil, nil, nil
-#		path.gsub!('\\', '/')
-#		if path.index('|')
-#			path = path.split('|')
-#			server = path[0]
-#			file = File.basename(path[1])
-#			directory = File.dirname(path[1])
-#		else
-#			if File.directory?(path)
-#				directory = path
-#			elsif File.directory?(File.dirname(path))
-#				directory = File.dirname(path)
-#				file = File.basename(path)
-#			else
-#				raise "path \"#{path}\" not found."
-#			end
-#		end
-#		return server, directory, file
-#	end
 
 	def find_symlink(file)
 		path = String.new
@@ -331,11 +315,15 @@ class Backup
 	def umount!(mount_point) # unmounting mount point in verbose mode
 		@log.write_noel("\t\t\tUnmounting #{mount_point}. - ")
 		info, error = runcmd("umount -v #{mount_point}")
+
+		# skip warning from verbose umount
+		error = nil if error && error.chomp.strip == 'NFSv4 mount point detected'
+
 		if info && !error
 			@log.write('[OK]', 'green')
 		else
 			@log.write('[FAILED}', 'red')
-			@log.write("\t\t\t\t#{error}", 'yellow')
+			@log.write("\t\t\t\tUnmount error: #{error}", 'yellow')
 		end
 	end
 
@@ -477,27 +465,18 @@ class Backup
 	
 
 	def check_online(server) # ping the server to check if it is online
-		begin
-			if server == nil
-				raise 'Nothing to check, because "server" is nil.'
-			end
-			response = `ping -c 1 #{server} 2>/dev/null`
-			online = response.split('packets transmitted, ')[1].split(' received')[0].to_i
-			if online == 1
-				status = 0
-				error = nil
-			elsif online ==0 
-				status = 1
-				error = "Ping of #{server} failed."
-			else
-				status = 2
-				error = 'Undefined number of pings...'
-			end
-		rescue
-			status = 1
-			error = $!
+		online = false
+		raise 'Nothing to check, because "server" is nil.' if !server
+		response = `ping -c 1 #{server} 2>/dev/null`
+		ping_recieved = response.split('packets transmitted, ')[1].split(' received')[0].to_i
+		if ping_recieved == 1
+			online = true
+		elsif ping_recieved == 0 
+			raise "Ping of #{server} failed."
+		else
+			raise "Undefined number of pings: #{ping_recieved}"
 		end
-		result = [status, error]
+		online
 	end
 	
 #	def check_mounted(device) # checks if device mounted somewhere

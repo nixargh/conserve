@@ -81,7 +81,7 @@ Conserve v.#{$version}
 \t1. Backup block devices with LVM snapshots and dd.
 \t2. Backup MBR.
 \t3. Backup files from LVM snapshot or from \"live\" fs.
-\t4. Backup to smb share.
+\t4. Backup to SMB or NFS share.
 \t5. Collect information useful on restore.
 \t6. Find out what to backup for bare metal restore.
 \t7. Send report by email.
@@ -97,11 +97,11 @@ Options:
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
 \t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. 
 \t-d=\t--dest_file='[type://server]/file'\tfull file path where to store backup;
-\t\t\t\t\t\t\ttypes: smb (nfs, rsync under development)
+\t\t\t\t\t\t\ttypes: smb, nfs (rsync under development)
 \t\t\t\t\t\t\tif file exist it is going to be overwrited;
 \t\t\t\t\t\t\tif source is number of files than all backup files will be added to \"destination.tar\" file.
 \t-D=\t--dest_dir='[type://server]/directory'\tfull directory path where to store backup;
-\t\t\t\t\t\t\ttypes: smb (nfs, rsync under development)
+\t\t\t\t\t\t\ttypes: smb, nfs (rsync under development)
 \t\t\t\t\t\t\ttarget directory must exist;
 \t\t\t\t\t\t\tbackup files names will be constructed from sources names.
 \t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.

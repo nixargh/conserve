@@ -1,11 +1,10 @@
 Conserve history.
-version 33
+version 34
 
 conserve:
 	to do:
-			1. Add feature to set destination as rsync://. Add -o argument to set rsync options. ??? If use with -z, don't forget to use special rsync option for gzip. 
-			2. Add feature to set destination as nfs://.
-			3. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			1. Add feature to set destination as rsync://. Add -o argument to set rsync options. ???If use with -z, don't forget to use special rsync option for gzip.???
+			2. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
@@ -24,6 +23,8 @@ conserve:
 		+	14. [BUG] Fixed choosing swap for backup when doing baremetal.
 		+	15. New option (-e or --exclude) to exclude devices from baremetal backup.
 		+	16. Rewrite destination to use smb:// prefix for smb shares. New destination format - "protocol://severname/share/path" or just "/path" for local folders.
+		+	17. Add_function#runcmd: now return 'exit code' as 3-rd value, additional to 'stdout' and 'stderr'.
+		+	18. [FEATURE] Backup to NFS share. Destination must be set as nfs://server/export_folder.
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

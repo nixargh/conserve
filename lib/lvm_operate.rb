@@ -14,14 +14,14 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class LVM_operate
-	attr_accessor :log, :lvm_block_size, :duplicate_warning, :snapshots_created
+	attr_accessor :log, :lvm_block_size
 	include Add_functions
 	
 	def initialize
 		@lvm_block_size = 4 # in megabytes
 		@snapshot_size_part = 80 # % from Free PE of Volume Group
-		@snapshots_created = []
-		@duplicate_warning = 0
+		@snapshots_created = Array.new
+		@duplicate_warning = false
 	end
 	
 	def get_volume_group(volume)
@@ -33,7 +33,6 @@ class LVM_operate
 	def clean!
 		@snapshots_created.each{|snapshot|
 			sleep 2
-#			next if !lv_exist?(snapshot) 
 			info, error = delete_snapshot(snapshot)
 			if info
 				@log.write_noel("\t\t\tDeleting snapshot #{snapshot} - ")
@@ -120,9 +119,9 @@ class LVM_operate
 				error = nil
 			elsif error.index("Found duplicate PV")
 				# this is to avoid duplication of block device with SLES11 on Hyper-V
-				@log.write("\t\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if @duplicate_warning == 0
+				@log.write("\t\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if !@duplicate_warning
 				error = nil
-				@duplicate_warning = 1
+				@duplicate_warning = true
 			else
 				raise error
 			end
@@ -130,8 +129,6 @@ class LVM_operate
 			info = nil
 			error = $!
 		end
-#		puts "return info: #{info}"
-#		puts "return error: #{error}"
 		return info, error
 	end
 end
