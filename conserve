@@ -130,6 +130,7 @@ class Conserve
 		baremetal.sysinfo = @sysinfo
 		if @params['dest_target_type'] == 'file'
 			dest = File.dirname(@params['destination'])
+			@params['dest_target_type'] = 'dir'
 		elsif @params['dest_target_type'] == 'dir'
 			dest = @params['destination']
 		end
@@ -139,7 +140,6 @@ class Conserve
 		start_lvm!
 		jobs.each{|job|
 			job = @params.merge(job)
-			#start_lvm! if job['use_lvm'] && !@lvm
 			start_backup!(job)
 		}
 	end

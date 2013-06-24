@@ -38,6 +38,7 @@ class Baremetal
 		job['job_name'] = "MBR backup"
 		job['source'] = @sysinfo['boot']['bootloader_on']
 		job['destination'] = "#{@destination}/mbr"
+		job['dest_target_type'] = 'file'
 		job['mbr'] = true
 		job['archive'] = false 
 		@jobs.push(job)
@@ -49,6 +50,7 @@ class Baremetal
 				job = Hash.new
 				job['job_name'] = "BOOT backup"
 				job['source'] = boot_partition
+				#job['destination'] = "#{@destination}/boot_#{File.basename(boot_partition)}"
 				job['use_lvm'] = false
 				job['archive'] = true
 				@jobs.push(job)
