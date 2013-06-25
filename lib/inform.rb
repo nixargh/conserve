@@ -225,11 +225,11 @@ class Inform
 				raise "Can't read log file, because it's not specified."
 			end
 
-			if check_potential_log_size(log) >= 2097152
-				rest_lines = 300
-				@log.write("\t\tHTML log size more than 2 Mb, compacting to #{rest_lines} lines from the end.")
-				log = compact_log(log, rest_lines)
-			end
+#			if check_potential_log_size(log) >= 2097152
+#				rest_lines = 300
+#				@log.write("\t\tHTML log size more than 2 Mb, compacting to #{rest_lines} lines from the end.")
+#				log = compact_log(log, rest_lines)
+#			end
 		
 			body_html = create_body(log)
 			attach_html = create_attach(log)

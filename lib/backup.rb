@@ -479,46 +479,6 @@ class Backup
 		online
 	end
 	
-#	def check_mounted(device) # checks if device mounted somewhere
-#		begin
-#			status = 0
-#			mounted = false
-#			mtab_list = `cat /etc/mtab`
-#			mtab_list.each_line{|line|
-#				mounted_device = line.split(" ")[0]
-#				if mounted_device.index(device)
-#					mounted = true
-#				else
-#					if mounted_device.index("mapper")
-#						splited_volume = mounted_device.split("/")
-#						volume_length = splited_volume.length
-#						lvm_data = splited_volume[volume_length - 1].split("-")
-#						volume = "/dev/#{lvm_data[0]}/#{lvm_data[1]}"
-#						mounted = true if volume.index(device)
-#					end
-#				end	
-#			}
-#			raise "#{device} not mounted" if !mounted
-#		rescue
-#			status = 1
-#			error = $!
-#		end
-#		result = [status, error]
-#	end
-#	
-#	def where_mounted?(partition) # find where partition is mounted
-#		partition = File.readlink(partition) if File.symlink?(partition)
-#		partition = partition.gsub('..','/dev')
-#		root = nil
-#		IO.read('/etc/mtab').each_line{|line|
-#			line.chomp!
-#			line = line.split(" ")
-#			root = line[1] if line[0] == partition
-#			#puts "partition = #{partition}\t\tline[0] = #{line[0]}\t\tline[1] = #{line[1]}\t\troot = #{root}\n"
-#		}
-#		root ? root : (raise "Can't find where #{partition} mounted")
-#	end
-	
 	def create_cred_file # ask to enter credentials for remote destination
 		begin
 			@log.write("\t\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow', true)

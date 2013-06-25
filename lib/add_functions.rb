@@ -63,7 +63,7 @@ module Add_functions
 		rescue
 			raise "runcmd: #{$!}"
 		ensure
-			File.unlink(temp_log_err, temp_log)
+			File.unlink(temp_log_err, temp_log, temp_exit_code)
 		end
 	end
 
