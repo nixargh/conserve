@@ -83,7 +83,7 @@ Conserve v.#{$version}
 \t1. Backup block devices with LVM snapshots and dd.
 \t2. Backup MBR.
 \t3. Backup files from LVM snapshot or from \"live\" fs.
-\t4. Backup file using rsync.
+\t4. Backup files using rsync.
 \t5. Backup to SMB or NFS share.
 \t6. Collect information useful on restore.
 \t7. Find out what to backup for bare metal restore.
@@ -104,7 +104,7 @@ Options:
 \t\t\t\t\t\t\tif file exist it is going to be overwrited;
 \t\t\t\t\t\t\tif source is number of files than all backup files will be added to \"destination.tar\" file.
 \t-D=\t--dest_dir='[type://server]/directory'\tfull directory path where to store backup;
-\t\t\t\t\t\t\ttypes: smb, nfs (rsync under development)
+\t\t\t\t\t\t\ttypes: smb, nfs, rsync;
 \t\t\t\t\t\t\ttarget directory must exist;
 \t\t\t\t\t\t\tbackup files names will be constructed from sources names.
 \t-o=\t--rsync_options='-vuPh'\t\t\tany rsync options that you like; Default \"-hru\" will be overrided. \"-v\" can't be overrided.

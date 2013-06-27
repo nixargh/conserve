@@ -11,7 +11,7 @@ Conserve can do:<br>
         <ul>1. Backup block devices with LVM snapshots and dd.</ul>
         <ul>2. Backup MBR.</ul>
         <ul>3. Backup files from LVM snapshot or from "live" fs.</ul>
-        <ul>4. Backup file using rsync.</ul>
+        <ul>4. Backup files using rsync.</ul>
         <ul>5. Backup to SMB or NFS share.</ul>
         <ul>6. Collect information useful on restore.</ul>
         <ul>7. Find out what to backup for bare metal restore.</ul>
