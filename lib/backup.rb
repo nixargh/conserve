@@ -63,6 +63,7 @@ class Backup
 			source_files.each{|source_file|
 				@log.write("\tBackup of #{source_file}:", 'yellow')
 				destination_file = create_destination(dest_path, source_file)
+				puts destination_file
 
 				if File.blockdev?(source_file)
 				# do block device backup
@@ -516,13 +517,14 @@ class Backup
 
 	def rsync_copy!(source, destination) # copy files using rsync
 		rsync_options = @rsync_options ? @rsync_options : "-hru#{'z' if @archive}"
-		@log.write_noel("\t\tRunning rsync (#{rsync_options}) of #{source} to #{destination} - ")
+		@log.write_noel("\t\tRunning rsync (-v #{rsync_options}) of #{source} to #{destination} - ")
 		info, error = runcmd("rsync -v #{rsync_options} #{source} #{destination}")
 		if error
 			@log.write('[FAILED]', 'red')
 			raise "rsync failed: #{error}."
 		else
 			@log.write('[OK]', 'green')
+			puts info
 		end
 	end
 
