@@ -53,6 +53,7 @@ class Backup
 			@log.write("Backup job \"#{@job_name}\" started - #{Time.now.asctime}")
 
 			dest_path = prepaire_destination(@destination)
+		puts dest_path
 
 			save_sysinfo!(dest_path) if @sysinfo
 
@@ -63,7 +64,7 @@ class Backup
 			source_files.each{|source_file|
 				@log.write("\tBackup of #{source_file}:", 'yellow')
 				destination_file = create_destination(dest_path, source_file)
-				puts destination_file
+		puts destination_file
 
 				if File.blockdev?(source_file)
 				# do block device backup
@@ -524,7 +525,9 @@ class Backup
 			raise "rsync failed: #{error}."
 		else
 			@log.write('[OK]', 'green')
-			puts info
+			info = info[info.index('sent')..-1]
+			info.gsub!("\n", " ")
+			@log.write("\t\t\trsync: #{line}")
 		end
 	end
 
