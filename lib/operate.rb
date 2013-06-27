@@ -40,6 +40,8 @@ class Operate
 				params['plain_files_tree'] = true
 			elsif parameter == '--source' || parameter == '-s'
 				raise "You must enter source path." if !(params['source'] = value)
+			elsif parameter == '--rsync_options' || parameter == '-o'
+				raise "You must enter rsync options." if !(params['rsync_options'] = value)
 			elsif parameter == '--dest_file' || parameter == '-d'
 				raise "You must enter destination path." if !(params['destination'] = value)
 				params['dest_target_type'] = 'file'
@@ -81,10 +83,11 @@ Conserve v.#{$version}
 \t1. Backup block devices with LVM snapshots and dd.
 \t2. Backup MBR.
 \t3. Backup files from LVM snapshot or from \"live\" fs.
-\t4. Backup to SMB or NFS share.
-\t5. Collect information useful on restore.
-\t6. Find out what to backup for bare metal restore.
-\t7. Send report by email.
+\t4. Backup file using rsync.
+\t5. Backup to SMB or NFS share.
+\t6. Collect information useful on restore.
+\t7. Find out what to backup for bare metal restore.
+\t8. Send report by email.
 
 Options:
 \t-b\t--baremetal\t\t\t\tdetect what to backup automatically;
@@ -104,6 +107,7 @@ Options:
 \t\t\t\t\t\t\ttypes: smb, nfs (rsync under development)
 \t\t\t\t\t\t\ttarget directory must exist;
 \t\t\t\t\t\t\tbackup files names will be constructed from sources names.
+\t-o=\t--rsync_options='-vuPh'\t\t\tany rsync options that you like; Default \"-hru\" will be overrided. \"-v\" can't be overrided.
 \t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
 \t\t--no_lvm\t\t\t\tdo not use LVM snapshot.
 \t-p\t--plain\t\t\t\t\tbackup files without tar as plain tree.

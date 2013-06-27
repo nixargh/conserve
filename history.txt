@@ -1,10 +1,9 @@
 Conserve history.
-version 37
+version 38
 
 conserve:
 	to do:
-			1. Remove duplication of remote dexstination mounts when do backup of multiple sources or baremetal.
-			2. Add feature to set destination as rsync://. Add -o argument to set rsync options. ???If use with -z, don't forget to use special rsync option for gzip.???
+			1. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
 			3. Add backup of multiple sources to one file.
 			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
@@ -15,7 +14,7 @@ conserve:
 		+	4. Added --collect or -cl command line parameter to store system information collected by Collector class.
 		+	5. Backup of files: New option '-p' or '--plain' to copy files without using tar or gzip as plain tree. '-z' will be ignored when '-p' used.
 		+	6. Backup of files: Set source as comma-separated list of files and/or directories. '*' sign can be used to backup all directory entries as individual sources. 
-		+	7. Baremetal backup option. It's collecting information and doing backup for all partitions.
+		+	7. Baremetal backup option. It's collecting information and doing backup for all partitions used at fstab.
 		+	8. [BUG] Conserve#save_sysinfo!: can't save if destination is remote place.
 		+	9. Collect class now collects information about device LABEL and resolve 'LABEL=/label' at fstab to "normal device name".  
 		+	10. Collect#get_dmraid_info. New method to get information about dmraid devices.
@@ -29,6 +28,7 @@ conserve:
 		+	18. [FEATURE] Backup to NFS share. Destination must be set as nfs://server/export_folder.
 		+	19. [BUG] Fixed: clean files created by Add_function#runcmd: /tmp/conserve_exitcode*.
 		+	20. Inform. Removed log compact if log size more than 2MB.
+		+	21. [FEATURE] Backup files with rsync. Destination = rsync://. Add -o argument to override default rsync options.
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

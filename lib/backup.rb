@@ -14,7 +14,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Backup
-	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo, :job_name
+	attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo, :job_name, :rsync_options
 	include Add_functions
 	
 	def initialize(source, destination, dest_target_type)
@@ -33,6 +33,8 @@ class Backup
 		@plain = false
 		@sysinfo = nil
 		@job_name = destination
+		@rsync = false
+		@rsync_options = nil
 	end
 	
 	def clean! # cleans after backups
@@ -64,6 +66,7 @@ class Backup
 
 				if File.blockdev?(source_file)
 				# do block device backup
+					raise "can't backup block device with rsync." if @rsync
 					@log.write("\t\tSource (#{source_file}) is a block device.", 'yellow')
 					if @mbr == true
 						@log.write("\t\tBackup MBR from #{source_file} selected.", 'yellow')
@@ -92,10 +95,12 @@ class Backup
 							source_file.gsub!(/\A#{mount_point}/, new_mount_point)
 						end
 					end	
-					if @plain
+					if @rsync
+						rsync_copy!(source_file, destination_file)
+					elsif @plain
 						create_file_copy!(source_file, destination_file)
 					else
-						create_archive!(source_file, destination_file)
+						create_tar!(source_file, destination_file)
 					end
 				end
 			}
@@ -132,7 +137,9 @@ class Backup
 			if dest_type == 'smb' || dest_type == 'nfs'
 				dest_path = mount(dest_path, dest_type)
 			elsif dest_type == 'rsync'
-				raise "rsync backup is under construction."
+				#raise "rsync backup is under construction."
+				@rsync = true
+				dest_path = destination
 			else
 				raise "Unknown type of destination: #{dest_type}."
 			end
@@ -507,6 +514,18 @@ class Backup
 		result = [status, error]
 	end
 
+	def rsync_copy!(source, destination) # copy files using rsync
+		rsync_options = @rsync_options ? @rsync_options : "-hru#{'z' if @archive}"
+		@log.write_noel("\t\tRunning rsync (#{rsync_options}) of #{source} to #{destination} - ")
+		info, error = runcmd("rsync -v #{rsync_options} #{source} #{destination}")
+		if error
+			@log.write('[FAILED]', 'red')
+			raise "rsync failed: #{error}."
+		else
+			@log.write('[OK]', 'green')
+		end
+	end
+
 	def create_file_copy!(source_file, destination_file) # copy file from to
 		@log.write_noel("\t\tRunning copy of #{source_file} to #{destination_file} - ")
 		begin
@@ -530,7 +549,7 @@ class Backup
 		end
 	end
 
-	def create_archive!(source_file, destination_file) # do tar and gzip if needed
+	def create_tar!(source_file, destination_file) # do tar and gzip if needed
 		begin
 			if @archive
 				destination_file = "#{destination_file}.tar.gz"

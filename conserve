@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.20'
+$version = '0.2.1.21'
 #### LICENSE ###################################################################
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>
@@ -161,6 +161,7 @@ class Conserve
 		backup.credential_file = params['cred_file'] if params['cred_file']
 		backup.archive = true if params['archive']
 		backup.plain = params['plain_files_tree'] if params['plain_files_tree']
+		backup.rsync_options = params['rsync_options'] if params['rsync_options']
 		if params['sysinfo_save_at_backup']
 			backup.sysinfo = @sysinfo
 			@params['sysinfo_save_at_backup'] = false 
