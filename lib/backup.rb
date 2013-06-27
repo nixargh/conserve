@@ -53,7 +53,6 @@ class Backup
 			@log.write("Backup job \"#{@job_name}\" started - #{Time.now.asctime}")
 
 			dest_path = prepaire_destination(@destination)
-		puts dest_path
 
 			save_sysinfo!(dest_path) if @sysinfo
 
@@ -64,7 +63,6 @@ class Backup
 			source_files.each{|source_file|
 				@log.write("\tBackup of #{source_file}:", 'yellow')
 				destination_file = create_destination(dest_path, source_file)
-		puts destination_file
 
 				if File.blockdev?(source_file)
 				# do block device backup
@@ -139,9 +137,9 @@ class Backup
 			if dest_type == 'smb' || dest_type == 'nfs'
 				dest_path = mount(dest_path, dest_type)
 			elsif dest_type == 'rsync'
-				#raise "rsync backup is under construction."
 				@rsync = true
-				dest_path = destination
+				@dest_target_type = 'file'
+				return destination
 			else
 				raise "Unknown type of destination: #{dest_type}."
 			end
@@ -526,8 +524,9 @@ class Backup
 		else
 			@log.write('[OK]', 'green')
 			info = info[info.index('sent')..-1]
-			info.gsub!("\n", " ")
-			@log.write("\t\t\trsync: #{line}")
+			info.gsub!("\n", "  ")
+			info.gsub!("  ", "; ")
+			@log.write("\t\t\trsync: #{info}")
 		end
 	end
 
