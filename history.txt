@@ -1,11 +1,11 @@
 Conserve history.
-version 38
+version 39
 
 conserve:
 	to do:
 			1. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
-			3. Add backup of multiple sources to one file.
-			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			2. Add backup of multiple sources to one file.
+			3. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
@@ -29,6 +29,8 @@ conserve:
 		+	19. [BUG] Fixed: clean files created by Add_function#runcmd: /tmp/conserve_exitcode*.
 		+	20. Inform. Removed log compact if log size more than 2MB.
 		+	21. [FEATURE] Backup files with rsync. Destination = rsync://. Add -o argument to override default rsync options.
+		+	22. [BUG] Fixed: SLES11: Conserve#run error: more than 1 file found: ... Backup#guess_file_volume partialy rewrited.
+		+	23. [BUG] Fixed: error of tar creation when tar sends warning "socket ignored".
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

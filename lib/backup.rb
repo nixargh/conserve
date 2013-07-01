@@ -448,13 +448,29 @@ class Backup
 	end
 	
 	def guess_file_volume(file) # detect partition where file stored
-		raise "file #{file} not found" if !File.exist?(file)
-		info, error = runcmd("df -T \"#{file}\"")
-		raise error if error
-		info = s_to_a(info)
-		raise "more than 1 file found: #{info}" if info.length > 2
-		device, a, b, c, d, e, mount_point = info[1].split(' ')
-		return device, mount_point
+		begin
+			raise "file #{file} not found" if !File.exist?(file)
+			info, error = runcmd("df -T \"#{file}\"")
+			raise error if error
+			info = s_to_a(info)
+			info = info.drop(1)
+			if info.length == 1
+				info = info[0]
+			elsif info.length == 2
+				spl_info = info[0].split(' ')
+				if !spl_info[1]
+					info = "#{spl_info} #{info[1]}"
+				else
+					raise "multiline output of df -T: first and second lines are not description of one filesystem: #{info}"
+				end
+			elsif info.length > 2
+				raise "multiline output of df -T: #{info}"
+			end
+			device, a, b, c, d, e, mount_point = info.split(' ')
+			return device, mount_point
+		rescue
+			raise "Can't guess filesystem of file \"#{file}\": #{$!}."
+		end
 	end
 	
 	def create_random_dir(where) # creates random directories inside directory specified at --where argument
@@ -567,14 +583,25 @@ class Backup
 			info, error = runcmd(cmd)
 			
 			error_a = Array.new
+			warnings = Array.new
 			error.each_line{|line|
-				line.chomp!
-				if !line.index("tar: Removing leading `/\' from")
+				line.chomp!.strip!
+				if line.index("tar: Removing leading `/\' from")
+					next
+				elsif line.index("socket ignored")
+					warnings.push(line)
+				else
 					error_a.push(line)
 				end
 			}
 			raise "tar created with error(s): #{error_a}" if !error_a.empty? && File.exist?(destination_file)
 			@log.write('[OK]', 'green')
+			if !warnings.empty?
+				@log.write("\t\t\ttar warinings:", 'yellow')
+				warnings.each{|msg|
+					@log.write("\t\t\t\t#{msg}")
+				}
+			end
 		rescue
 			@log.write('[FAILED]', 'red')
 			raise "tar creation failed: #{$!}."
