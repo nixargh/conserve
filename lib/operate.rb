@@ -100,14 +100,18 @@ Options:
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
 \t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. 
 \t-d=\t--dest_file='[type://server]/file'\tfull file path where to store backup;
-\t\t\t\t\t\t\ttypes: smb, nfs (rsync under development)
-\t\t\t\t\t\t\tif file exist it is going to be overwrited;
-\t\t\t\t\t\t\tif source is number of files than all backup files will be added to \"destination.tar\" file.
+\t\t\t\t\t\t\ttypes: smb, nfs, rsync;
+\t\t\t\t\t\t\texisting file will be overwrited;
+\t\t\t\t\t\t\t(in development) if source is number of files than all backup files will be added to \"destination.tar\" file;
+\t\t\t\t\t\t\trsync: -d equals to -D;
+\t\t\t\t\t\t\trsync: using / at the end of source path affects destination, use man rsync to learn more.
 \t-D=\t--dest_dir='[type://server]/directory'\tfull directory path where to store backup;
 \t\t\t\t\t\t\ttypes: smb, nfs, rsync;
-\t\t\t\t\t\t\ttarget directory must exist;
-\t\t\t\t\t\t\tbackup files names will be constructed from sources names.
-\t-o=\t--rsync_options='-vuPh'\t\t\tany rsync options that you like; Default \"-hru\" will be overrided. \"-v\" can't be overrided.
+\t\t\t\t\t\t\tif target directory not found it will be created, but only one level;
+\t\t\t\t\t\t\tbackup files names will be constructed from sources names;
+\t\t\t\t\t\t\trsync: -d equals to -D;
+\t\t\t\t\t\t\trsync: using / at the end of source path affects destination, use man rsync to learn more.
+\t-o=\t--rsync_options='-vuPh'\t\t\tany rsync options that you like; Default \"-hru\" will be overrided. \"-v\" can't be overrided;
 \t-l=\t--log='file'\t\t\t\tfull path to logfile. Show info to console by default.
 \t\t--no_lvm\t\t\t\tdo not use LVM snapshot.
 \t-p\t--plain\t\t\t\t\tbackup files without tar as plain tree.
