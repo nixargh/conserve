@@ -23,7 +23,13 @@ IO.read("./misc/used_utils.txt").each_line{|util|
 	end
 }
 packages.uniq!.compact!
-puts "Used packages: #{packages}."
+puts "Used packages: "
+File.open("./misc/used_packages.txt", 'w'){|file|
+	packages.each{|package|
+		puts "\t" + package
+		file.puts(package)
+	}
+}
 #tasks = Array.new
 #packages.each{|package|
 #	task = `apt-cache show #{package} |grep -m 1 Task`.chomp.split(":")[1]
