@@ -327,6 +327,14 @@ class Collector
 		partitions = Array.new
 		#info, error = runcmd("sfdisk -l #{disk} -d -x 2>1")
 		info, error = runcmd("sfdisk -l #{disk} -d -x")
+		error.chomp!
+		if error.index('GPT')
+			# stub. need to write alternative detection method for GPT partition table
+			raise "GPT partition table detected on #{disk}. Don't know how to work with it."
+		elsif error == "Warning: extended partition does not start at a cylinder boundary.\nDOS and Linux will interpret the contents differently."
+			# stub for that warning
+			error = nil
+		end
 		if !error
 			info.each_line{|line|
 				if line.index('/dev/') == 0
@@ -343,8 +351,8 @@ class Collector
 					end
 				end
 			}
-		elsif error.index('GPT')
-			# stub. need to write alternative detection method for GPT partition table
+		else
+			raise "Error while reading partitions table of #{disk}: #{error}."
 		end
 		partitions
 	end
