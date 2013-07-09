@@ -282,14 +282,8 @@ class Collector
 	end
 
 	def find_grub_mbr(device) # detect if there is GRUB's info at hdd mbr
-		info, error = runcmd("dd bs=512 count=1 if=#{device} 2>/dev/null | strings")
-		if info
-		info.each_line{|line|
-			line.chomp!.strip!	
-			return true if line == 'GRUB'
-		}
-		end
-		false
+		info, error = runcmd("dd bs=512 count=1 if=#{device} 2>/dev/null")
+		info.index('GRUB') ? true : false
 	end
 
 	def list_disks! # create list with sizes of different disk devices on current machine
@@ -327,13 +321,15 @@ class Collector
 		partitions = Array.new
 		#info, error = runcmd("sfdisk -l #{disk} -d -x 2>1")
 		info, error = runcmd("sfdisk -l #{disk} -d -x")
-		error.chomp!
-		if error.index('GPT')
-			# stub. need to write alternative detection method for GPT partition table
-			raise "GPT partition table detected on #{disk}. Don't know how to work with it."
-		elsif error == "Warning: extended partition does not start at a cylinder boundary.\nDOS and Linux will interpret the contents differently."
-			# stub for that warning
-			error = nil
+		if error
+			error.chomp!
+			if error.index('GPT')
+				# stub. need to write alternative detection method for GPT partition table
+				raise "GPT partition table detected on #{disk}. Don't know how to work with it."
+			elsif error == "Warning: extended partition does not start at a cylinder boundary.\nDOS and Linux will interpret the contents differently."
+				# stub for that warning
+				error = nil
+			end
 		end
 		if !error
 			info.each_line{|line|
