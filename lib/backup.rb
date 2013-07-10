@@ -318,12 +318,13 @@ class Backup
 		result = [status, error]
 	end
 
-	def check_nfs_dir(server, dir)
-		info, error = runcmd("showmount -d #{server}")
+	def check_nfs_dir(server, dir) # checks existance of NFS share on server (will be good to check if you belongs to clients)
+		info, error = runcmd("showmount -e #{server}")
 		if !error
 			info.each_line{|line|
+				share, client = line.split(' ')
 				line.chomp!.strip!
-				if dir == line
+				if dir == share
 					return true
 				end
 			}
