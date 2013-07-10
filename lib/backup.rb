@@ -50,7 +50,7 @@ class Backup
 
 	def create! # creates backups
 		begin
-			@log.write("Backup job \"#{@job_name}\" started - #{Time.now.asctime}")
+			@log.write("\tBackup job \"#{@job_name}\" started - #{Time.now.asctime}")
 
 			dest_path = prepaire_destination(@destination)
 
@@ -61,15 +61,15 @@ class Backup
 			raise "Can't backup multiple sources to one destination file. Not ready yet." if source_files.length > 1 && @dest_target_type == 'file'
 
 			source_files.each{|source_file|
-				@log.write("\tBackup of #{source_file}:", 'yellow')
+				@log.write("\t\tBackup of #{source_file}:", 'yellow')
 				destination_file = create_destination(dest_path, source_file)
 
 				if File.blockdev?(source_file)
 				# do block device backup
 					raise "can't backup block device with rsync." if @rsync
-					@log.write("\t\tSource (#{source_file}) is a block device.", 'yellow')
+					@log.write("\t\t\tSource (#{source_file}) is a block device.", 'yellow')
 					if @mbr == true
-						@log.write("\t\tBackup MBR from #{source_file} selected.", 'yellow')
+						@log.write("\t\t\tBackup MBR from #{source_file} selected.", 'yellow')
 						backup_mbr(source_file, destination_file)
 					else
 					# do image of snapshot or raw partition
@@ -83,7 +83,7 @@ class Backup
 				# do files backup copy
 					if @lvm
 						device, mount_point = guess_file_volume(source_file)
-						@log.write("\t\tFound block device \"#{device}\" for source file(s): #{source_file}.")
+						@log.write("\t\t\tFound block device \"#{device}\" for source file(s): #{source_file}.")
 						device = do_snapshot(device)
 						new_mount_point = mount(device, 'local')
 						if (new_source_file = find_symlink(source_file))
@@ -219,24 +219,12 @@ class Backup
 		@log.write("\t\tMounting SMB share: ", 'yellow')
 		server, path = what[2..what.length].split('/',2)
 		if check_online(server)
-			random_dir = create_random_dir(where)
-			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
+			mount_dir = create_random_dir(where)
 			create_cred_file if File.exist?(@credential_file) == false
 			mount_stat = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
 			mount_check = check_mount_stat(mount_stat, what, mount_dir)
 			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
-			@log.write_noel("\t\t\tTesting share is writable - ")
-			test_file = "#{path}/test_file"
-			begin
-				File.open(test_file, 'w'){|file|
-					file.puts('test')
-				}
-				File.unlink(test_file)
-				@log.write('[OK]', 'green')
-			rescue
-				@log.write('[FAILED}', 'red')
-				raise "File creation test on share #{what} failed: #{$!}."
-			end
+			raise "File creation test on share #{what} failed: #{$!}." if !dir_writable?(path)
 		else
 			raise "#{server} isn't online."
 		end
@@ -248,24 +236,35 @@ class Backup
 		@log.write("\t\tMounting NFS share: ", 'yellow')
 		server, path = what[2..what.length].split('/',2)
 		what = "#{server}:/#{path}"
+		path = "/#{path}"
 		if check_online(server)
-			random_dir = create_random_dir(where)
-			random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
-			mount_bin = File.exist?(`which 'mount.nfs4'`.chomp) ? "mount.nfs4" : "mount.nfs"
-			mount_stat = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
-			mount_check = check_mount_stat(mount_stat, what, mount_dir)
-			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
-			@log.write_noel("\t\t\tTesting share is writable - ")
-			test_file = "#{path}/test_file"
-			begin
-				File.open(test_file, 'w'){|file|
-					file.puts('test')
-				}
-				File.unlink(test_file)
-				@log.write('[OK]', 'green')
-			rescue
-				@log.write('[FAILED}', 'red')
-				raise "File creation test on share #{what} failed: #{$!}."
+			if check_nfs_dir(server, path)
+				@log.write("\t\t\tNFS share #{path} exist at server #{server}.")
+
+				mount_dir = create_random_dir(where)
+				mount_bin = File.exist?(`which 'mount.nfs4'`.chomp) ? "mount.nfs4" : "mount.nfs"
+
+				done = false
+				while !done do
+					@log.write_noel("\t\t\tMounting #{what} using #{mount_bin} to #{mount_dir} - ")
+					info, error = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
+					error.chomp!.strip! if error
+					if !error
+						@log.write("[OK]", 'green')
+						done = true
+						path = mount_dir
+						@mounted[what] = path
+					elsif error == "mount.nfs4: Protocol not supported"
+						@log.write("[FAILED] - NFS4 not supported", 'yellow')
+						mount_bin = "mount.nfs"
+					else
+						raise error
+					end
+				end
+
+				raise "File creation test on share #{what} failed: #{$!}." if !dir_writable?(path)
+			else
+				raise "NFS share #{path} not found at #{server}."
 			end
 		else
 			raise "#{server} isn't online."
@@ -275,14 +274,29 @@ class Backup
 
 	def mount_local(what, where) # mounts local device
 		@log.write("\t\tMounting local disk: ", 'yellow')
-		random_dir = create_random_dir(where)
-		random_dir[0] == 0 ? mount_dir = random_dir[2] : (raise "Can't create random directory: #{random_dir[1]}")
+		mount_dir = create_random_dir(where)
 		mount_stat = runcmd("mount #{what} #{mount_dir}")
 		mount_check = check_mount_stat(mount_stat, what, mount_dir)
 		mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
 		path
 	end
 	
+	def dir_writable?(dir) # check if directory is writable
+		begin
+			@log.write_noel("\t\t\tTesting directory #{dir} is writable - ")
+			test_file = "#{dir}/test_file#{rand(100)}"
+			File.open(test_file, 'w'){|file|
+				file.puts('test')
+			}
+			File.unlink(test_file)
+			@log.write('[OK]', 'green')
+			true
+		rescue
+			@log.write('[FAILED}', 'red')
+			false
+		end
+	end
+
 	def check_mount_stat(mount_stat, what, mount_dir) # analize mount feedback information
 		begin
 			info, error = mount_stat
@@ -290,8 +304,6 @@ class Backup
 			@mounted[what] = mount_dir
 			if error
 				@log.write("\t\t\t#{what} NOT mounted to #{mount_dir} - ")
-				@log.write("[FAILED]", 'red')
-				raise error
 			elsif info && !error
 				@log.write_noel("\t\t\t#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
 				@log.write("[OK]", 'green')
@@ -304,6 +316,21 @@ class Backup
 			error = $!
 		end
 		result = [status, error]
+	end
+
+	def check_nfs_dir(server, dir)
+		info, error = runcmd("showmount -d #{server}")
+		if !error
+			info.each_line{|line|
+				line.chomp!.strip!
+				if dir == line
+					return true
+				end
+			}
+		else
+			raise "Can't check direcroty \"#{dir}\" on NFS server \"#{server}\": #{$!}."
+		end
+		false
 	end
 
 	def find_symlink(file)
@@ -336,8 +363,8 @@ class Backup
 
 	def do_snapshot(lvm_lv) # do snapshot of LVM Logical Volume
 		lvm_lv_snapshot = nil
-		@log.write("\t\tUsing LVM (by default):", 'yellow')
-		@log.write_noel("\t\t\tCreating snapshot of #{lvm_lv} - ") 
+		@log.write("\t\t\tUsing LVM (by default):", 'yellow')
+		@log.write_noel("\t\t\t\tCreating snapshot of #{lvm_lv} - ") 
 		create_snapshot_result = @lvm.create_snapshot(lvm_lv)
 		if create_snapshot_result[0] == 0
 			@log.write('[OK]', 'green')
@@ -355,7 +382,7 @@ class Backup
 
 	def backup_mbr(source_device, destination_file) # backups Master Boot Record of block device
 		if File.blockdev?(source_device)
-			@log.write_noel("\t\tRunning MBR backup of #{source_device} to #{destination_file}, please wait... - ")
+			@log.write_noel("\t\t\tRunning MBR backup of #{source_device} to #{destination_file}, please wait... - ")
 			`dd if=#{source_device} of=#{destination_file} bs=512 count=1 1>/dev/null 2>/dev/null`
 			if File.exist?(destination_file)
 				@log.write('[OK]', 'green')
@@ -393,7 +420,7 @@ class Backup
 	
 	def make_image!(partition, path) # creates and checks image of some partition or HDD
 		begin
-			@log.write("\t\tImage creation:", 'yellow')
+			@log.write("\t\t\tImage creation:", 'yellow')
 			info = create_image(partition, path)
 			if info && info.index("copied")
 				@log.write('[OK]', 'green')
@@ -413,10 +440,10 @@ class Backup
 			dd_log = "/tmp/dd_#{rand(100)}.log"
 			if @archive
 				path = "#{path}.gz"
-				@log.write_noel("\t\t\tCreating gziped image of #{partition} to #{path} - ")
+				@log.write_noel("\t\t\t\tCreating gziped image of #{partition} to #{path} - ")
 				`dd if=#{partition} bs=#{block_size}M 2>#{dd_log} | gzip > #{path}`
 			else
-				@log.write_noel("\t\t\tCreating image of #{partition} to #{path} - ")
+				@log.write_noel("\t\t\t\tCreating image of #{partition} to #{path} - ")
 				`dd if=#{partition} of=#{path} bs=#{block_size}M 2>#{dd_log}`
 			end
 			return IO.read(dd_log)
@@ -430,13 +457,13 @@ class Backup
 	def check_image!(partition, path) # checks that image was create successfully
 		begin
 			path = "#{path}.gz" if @archive
-			@log.write_noel("\t\t\tChecking image (#{path}) of #{partition} - ")
+			@log.write_noel("\t\t\t\tChecking image (#{path}) of #{partition} - ")
 			size = nil
 			partition_size = get_device_size(partition)
 			image_size = get_image_file_size(path)
 			if partition_size == image_size
 				@log.write('[OK]', 'green')
-				@log.write_noel("\t\t\tSource size: #{format_size(partition_size)}; Image size: #{format_size(image_size)}")
+				@log.write_noel("\t\t\t\tSource size: #{format_size(partition_size)}; Image size: #{format_size(image_size)}")
 				@archive ? (@log.write("; Archived image size: #{format_size(File.size?(path))}.")) : @log.write(".")
 			else
 				raise "image file size not equal to partition size: #{image_size} != #{partition_size}"
@@ -475,15 +502,13 @@ class Backup
 	
 	def create_random_dir(where) # creates random directories inside directory specified at --where argument
 		begin
-			status = 0
 			mount_dir = "#{where}/bak#{rand(1000000)}"
-			raise "Can't create directory #{mount_dir}." if Dir.mkdir(mount_dir) != 0
+			Dir.mkdir(mount_dir)
 			@mount_dir.push(mount_dir)
 		rescue
-			status = 1
-			error = $!
+			raise "Can't create random directory #{mount_dir}: #{$!}." 
 		end
-		result = [status, error, mount_dir]
+		mount_dir
 	end
 	
 
@@ -504,12 +529,12 @@ class Backup
 	
 	def create_cred_file # ask to enter credentials for remote destination
 		begin
-			@log.write("\t\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow', true)
+			@log.write("\t\t\t\tCredential file \"#{@credential_file}\" not found. Let's create it...", 'yellow', true)
 			status = 0
 			error = nil
-			@log.write_noel("\t\t\t\tEnter username to access shared resource: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\t\tEnter username to access shared resource: ", 'sky_blue', true)
 			username = $stdin.gets.chomp
-			@log.write_noel("\t\t\t\tEnter password: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\t\tEnter password: ", 'sky_blue', true)
 			system "stty -echo"
 			password = $stdin.gets.chomp
 			system "stty echo"
@@ -532,7 +557,7 @@ class Backup
 
 	def rsync_copy!(source, destination) # copy files using rsync
 		rsync_options = @rsync_options ? @rsync_options : "-hru#{'z' if @archive}"
-		@log.write_noel("\t\tRunning rsync (-v #{rsync_options}) of #{source} to #{destination} - ")
+		@log.write_noel("\t\t\tRunning rsync (-v #{rsync_options}) of #{source} to #{destination} - ")
 		info, error = runcmd("rsync -v #{rsync_options} #{source} #{destination}")
 		if error
 			@log.write('[FAILED]', 'red')
@@ -542,12 +567,12 @@ class Backup
 			info = info[info.index('sent')..-1]
 			info.gsub!("\n", "  ")
 			info.gsub!("  ", "; ")
-			@log.write("\t\t\trsync: #{info}")
+			@log.write("\t\t\t\trsync: #{info}")
 		end
 	end
 
 	def create_file_copy!(source_file, destination_file) # copy file from to
-		@log.write_noel("\t\tRunning copy of #{source_file} to #{destination_file} - ")
+		@log.write_noel("\t\t\tRunning copy of #{source_file} to #{destination_file} - ")
 		begin
 			FileUtils.copy_entry(source_file, destination_file, preserve = true, remove_destination = true)
 # It's coreutils variation of the same copy
@@ -578,7 +603,7 @@ class Backup
 				destination_file = "#{destination_file}.tar"
 				arc_arg = nil
 			end
-			@log.write_noel("\t\tRunning tar#{ arc_arg ? ' and gzip' : ''} of #{source_file} to #{destination_file} - ")
+			@log.write_noel("\t\t\tRunning tar#{ arc_arg ? ' and gzip' : ''} of #{source_file} to #{destination_file} - ")
 			cmd = "tar -c#{arc_arg}f \"#{destination_file}\" \"#{source_file}\""
 			info, error = runcmd(cmd)
 			
@@ -597,9 +622,9 @@ class Backup
 			raise "tar created with error(s): #{error_a}" if !error_a.empty? && File.exist?(destination_file)
 			@log.write('[OK]', 'green')
 			if !warnings.empty?
-				@log.write("\t\t\ttar warinings:", 'yellow')
+				@log.write("\t\t\t\ttar warinings:", 'yellow')
 				warnings.each{|msg|
-					@log.write("\t\t\t\t#{msg}")
+					@log.write("\t\t\t\t\t#{msg}")
 				}
 			end
 		rescue

@@ -1,5 +1,5 @@
 Conserve history.
-version 42 
+version 43 
 
 conserve:
 	to do:
@@ -7,10 +7,11 @@ conserve:
 			                Would you like to install "mail" ruby gem? [y|n]: y
 							        undefined method `write' for nil:NilClass
 			2. Rewrite Add_functions#runcmd to return chomp-ed values. And fix all methods broken after that.
-			3. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
-			4. Add backup of multiple sources to one file.
-			5. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
-			6. Send report without creating log file. Should create array of strings that sended to @log and send this array in report.
+			3. Destroy Backup#check_mount_stat method. Need to rewrite a little two other methods.
+			4. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
+			5. Add backup of multiple sources to one file.
+			6. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			7. Send report without creating log file. Should create array of strings that sended to @log and send this array in report.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
@@ -38,6 +39,7 @@ conserve:
 		+	23. [BUG] Fixed: error of tar creation when tar sends warning "socket ignored".
 		+	24. [BUG] Fixed: Conserve#run error: Can't resolv UUID c5e1f478-4c72-4ae2-94ad-fd3e54c4afa5 to "normal device name".
 				{"use_lvm"=>true, "baremetal"=>true, "destination"=>"nfs://nfs.hcp300.dsf.local/fs/test/conserve/data", "dest_target_type"=>"dir", "debug"=>true}
+		+	25. Backup#mount_nfs rewrited. Added some intelligence about choosing between NFS3 and NFS4.
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

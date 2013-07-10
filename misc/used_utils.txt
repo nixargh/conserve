@@ -18,6 +18,7 @@ mount.cifs
 mount.nfs
 ping
 sfdisk
+showmount
 tar
 umount
 vgcfgbackup
