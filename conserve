@@ -183,16 +183,13 @@ class Conserve
 	def check_inform_gems! # detect if you nedd to install some ruby gems
 		@log.write("Checking ruby gems for Inform.", 'yellow') if @debug
 		ruby_gems = Ruby_gems.new
+		ruby_gems.log = @log
 		if !ruby_gems.check_rubygems
-			text = "\t\t\t\"ruby gem\" utility not installed. Inform function require it."
-			@log.write(text)
-			puts text
+			@log.write("\t\t\t\"ruby gem\" utility not installed. Inform function require it.", 'red', true)
 			ruby_gems.install_rubygems
 		end
 		if !ruby_gems.gem_installed?('mail')
-			text = "\t\t\t\"mail\" ruby gem not installed. Inform function require it."
-			@log.write(text, 'red')
-			puts text
+			@log.write("\t\t\t\"mail\" ruby gem not installed. Inform function require it.", 'red', true)
 			ruby_gems.install_mail_gem
 		end
 		if ruby_gems.check_rubygems

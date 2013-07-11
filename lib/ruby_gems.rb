@@ -14,8 +14,9 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Ruby_gems
+	attr_accessor :log
+
 	def initialize
-		@log = $log
 		@rpm_download_site = 'magic-beans.org'
 		@SLES11_i586_rpm_dir = '/conserve/additional_rpms/SLES11/i586'
 		@SLES11_i586_rpms = ['ruby-1.8.7.p352-1.1.i586.rpm', 'ruby-devel-1.8.7.p352-1.1.i586.rpm', 'rubygems-1.3.7-10.1.i586.rpm']
@@ -24,7 +25,7 @@ class Ruby_gems
 	def install_rubygems
 		answer = nil
 		while answer != 'y' && answer != 'n' do
-			@log.write_noel("\t\tWould you like to install \"ruby gem\" utility? [y|n]: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\tWould you like to install \"ruby gem\" utility? [y|n]: ", 'sky_blue', true)
 			answer = $stdin.gets.chomp
 		end
 		if answer == 'n'
@@ -39,7 +40,7 @@ class Ruby_gems
 					`yum -y install rubygems`
 				elsif os.index('SLES11')
 					while answer != 'y' && answer != 'n' do
-						@log.write_noel("\t\t\tInstall it from ftp://#{@rpm_download_site}? [y|n]: ", 'sky_blue', true)
+						@log.write_noel("\t\t\t\t\tInstall it from ftp://#{@rpm_download_site}? [y|n]: ", 'sky_blue', true)
 						answer = $stdin.gets.chomp
 					end
 					if answer == 'n'
@@ -81,7 +82,7 @@ class Ruby_gems
 	def install_mail_gem
 		answer = nil
 		while answer != 'y' && answer != 'n' do
-			@log.write_noel("\t\tWould you like to install \"mail\" ruby gem? [y|n]: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\tWould you like to install \"mail\" ruby gem? [y|n]: ", 'sky_blue', true)
 			answer = $stdin.gets.chomp
 		end
 		if answer == 'n'
@@ -119,7 +120,7 @@ class Ruby_gems
 	def install_gem(gem)
 		gem_cmd = check_rubygems
 		if gem_cmd
-			@log.write("\t\t\tInstalling ruby gem \"#{gem}\"...")
+			@log.write("\t\t\t\t\tInstalling ruby gem \"#{gem}\"...")
 			`#{gem_cmd} install #{gem}`
 		else
 			raise "Failed to find \"ruby gem\" utility"
@@ -136,13 +137,13 @@ class Ruby_gems
 			# detect OS and arch to understand what rpms to download
 			os = detect_os
 			if (os[0] == 'SLES11' || os[0] == 'SLES11 sp.1')
-				@log.write("\t\t\t#{os[0]} with #{os[1]} architecture detected.")
+				@log.write("\t\t\t\t\t#{os[0]} with #{os[1]} architecture detected.")
 				ftp.chdir(@SLES11_i586_rpm_dir) if os[1] == 'i586'
 			else
 				raise "Don't have FTP directory for \"#{os[0]}\" #{os[1]}"
 			end
 			@SLES11_i586_rpms.each{|file|
-				@log.write("\t\t\tDownloading #{file} from #{@rpm_download_site}...")
+				@log.write("\t\t\t\t\tDownloading #{file} from #{@rpm_download_site}...")
 				ftp.getbinaryfile(file,"./#{file}")
 			}
 		rescue LoadError
@@ -160,19 +161,19 @@ class Ruby_gems
 	def install_rubygems_rpms
 		Dir.entries(Dir.pwd).each{|file| 
 			if /ruby-\d/ =~ file
-				@log.write("\t\t\tUpgrading ruby by #{file}...")
+				@log.write("\t\t\t\t\tUpgrading ruby by #{file}...")
 				`rpm -U #{file} 2>/dev/null`
 			end
 		}
 		Dir.entries(Dir.pwd).each{|file|
 			if /ruby-devel-\d/ =~ file
-				@log.write("\t\t\tInstalling #{file}...")
+				@log.write("\t\t\t\t\tInstalling #{file}...")
 				`rpm -i #{file} 2>/dev/null`
 			end
 		}
 		Dir.entries(Dir.pwd).each{|file|
 			if /rubygems-\d/ =~ file
-				@log.write("\t\t\tInstalling #{file}...")
+				@log.write("\t\t\t\t\tInstalling #{file}...")
 				`rpm -i #{file} 2>/dev/null`
 			end
 		}

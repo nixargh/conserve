@@ -12,10 +12,10 @@ Conserve can do:<br>
         <ul>2. Backup MBR.</ul>
         <ul>3. Backup files from LVM snapshot or from "live" fs.</ul>
         <ul>4. Backup files using rsync.</ul>
-        <ul>5. Backup to SMB or NFS share.</ul>
+        <ul>5. Backup to SMB(CIFS) or NFS share.</ul>
         <ul>6. Collect information useful on restore.</ul>
         <ul>7. Find out what to backup for bare metal restore.</ul>
         <ul>8. Send report by email.</ul>
 </li>
 <br>
-More information can be found here - http://conserve.magic-beans.org/
+More information can be found here - http://conserve.magic-beans.org/about
