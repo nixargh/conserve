@@ -24,7 +24,7 @@ class Ruby_gems
 	def install_rubygems
 		answer = nil
 		while answer != 'y' && answer != 'n' do
-			print "\t\tWould you like to install \"ruby gem\" utility? [y|n]: "
+			@log.write_noel("\t\tWould you like to install \"ruby gem\" utility? [y|n]: ", 'sky_blue', true)
 			answer = $stdin.gets.chomp
 		end
 		if answer == 'n'
@@ -39,7 +39,7 @@ class Ruby_gems
 					`yum -y install rubygems`
 				elsif os.index('SLES11')
 					while answer != 'y' && answer != 'n' do
-						print "Install it for ftp://#{@rpm_download_site}? [y|n]: "
+						@log.write_noel("\t\t\tInstall it from ftp://#{@rpm_download_site}? [y|n]: ", 'sky_blue', true)
 						answer = $stdin.gets.chomp
 					end
 					if answer == 'n'
@@ -81,7 +81,7 @@ class Ruby_gems
 	def install_mail_gem
 		answer = nil
 		while answer != 'y' && answer != 'n' do
-			print "\t\tWould you like to install \"mail\" ruby gem? [y|n]: "
+			@log.write_noel("\t\tWould you like to install \"mail\" ruby gem? [y|n]: ", 'sky_blue', true)
 			answer = $stdin.gets.chomp
 		end
 		if answer == 'n'

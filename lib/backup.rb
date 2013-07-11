@@ -235,7 +235,6 @@ class Backup
 		raise "You need to install \"mount.nfs\" (\"nfs-common\" package on Ubuntu) to mount SMB shares" if !File.exist?(`which 'mount.nfs'`.chomp)
 		@log.write("\t\tMounting NFS share: ", 'yellow')
 		server, path = what[2..what.length].split('/',2)
-		what = "#{server}:/#{path}"
 		path = "/#{path}"
 		if check_online(server)
 			if !check_nfs_dir(server, path)
@@ -250,6 +249,7 @@ class Backup
 			mount_bin = File.exist?(`which 'mount.nfs4'`.chomp) ? "mount.nfs4" : "mount.nfs"
 
 			done = false
+			what = "#{server}:#{path}"
 			while !done do
 				@log.write_noel("\t\t\tMounting #{what} using #{mount_bin} to #{mount_dir} - ")
 				info, error = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
