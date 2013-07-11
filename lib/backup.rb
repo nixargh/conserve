@@ -238,34 +238,51 @@ class Backup
 		what = "#{server}:/#{path}"
 		path = "/#{path}"
 		if check_online(server)
-			if check_nfs_dir(server, path)
+			if !check_nfs_dir(server, path)
+				@log.write("\t\t\tNFS share #{path} doesn't exist at server #{server}. Trying lower level...")
+				new_folder = File.basename(path)
+				path = File.dirname(path)
+				raise "NFS share #{path} not found at #{server}." if !check_nfs_dir(server, path)
 				@log.write("\t\t\tNFS share #{path} exist at server #{server}.")
+			end
 
-				mount_dir = create_random_dir(where)
-				mount_bin = File.exist?(`which 'mount.nfs4'`.chomp) ? "mount.nfs4" : "mount.nfs"
+			mount_dir = create_random_dir(where)
+			mount_bin = File.exist?(`which 'mount.nfs4'`.chomp) ? "mount.nfs4" : "mount.nfs"
 
-				done = false
-				while !done do
-					@log.write_noel("\t\t\tMounting #{what} using #{mount_bin} to #{mount_dir} - ")
-					info, error = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
-					error.chomp!.strip! if error
-					if !error
-						@log.write("[OK]", 'green')
-						done = true
-						path = mount_dir
-						@mounted[what] = path
-					elsif error == "mount.nfs4: Protocol not supported"
-						@log.write("[FAILED] - NFS4 not supported", 'yellow')
-						mount_bin = "mount.nfs"
-					else
-						raise error
+			done = false
+			while !done do
+				@log.write_noel("\t\t\tMounting #{what} using #{mount_bin} to #{mount_dir} - ")
+				info, error = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
+				error.chomp!.strip! if error
+				if !error
+					@log.write("[OK]", 'green')
+					done = true
+					path = mount_dir
+					@mounted[what] = path
+				elsif error == "mount.nfs4: Protocol not supported"
+					@log.write("[FAILED] - NFS4 not supported", 'yellow')
+					mount_bin = "mount.nfs"
+				else
+					raise error
+				end
+			end
+
+			if new_folder
+				new_path = "#{path}/#{new_folder}"
+				if !File.directory?(new_path)
+					begin
+						@log.write_noel("\t\t\tCreating directory #{new_folder} at #{path} - ")
+						Dir.mkdir(new_path)
+						@log.write('[OK]', 'green')
+						path = new_path
+					rescue
+						@log.write('[FAILED}', 'red')
+						raise "Can't create #{new_folder} at #{path}: #{$!}."
 					end
 				end
-
-				raise "File creation test on share #{what} failed: #{$!}." if !dir_writable?(path)
-			else
-				raise "NFS share #{path} not found at #{server}."
 			end
+
+			raise "File creation test on share #{what} failed: #{$!}." if !dir_writable?(path)
 		else
 			raise "#{server} isn't online."
 		end
