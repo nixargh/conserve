@@ -274,12 +274,12 @@ class Backup
 						@log.write_noel("\t\t\tCreating directory #{new_folder} at #{path} - ")
 						Dir.mkdir(new_path)
 						@log.write('[OK]', 'green')
-						path = new_path
 					rescue
 						@log.write('[FAILED}', 'red')
 						raise "Can't create #{new_folder} at #{path}: #{$!}."
 					end
 				end
+				path = new_path
 			end
 
 			raise "File creation test on share #{what} failed: #{$!}." if !dir_writable?(path)
@@ -369,9 +369,10 @@ class Backup
 		info, error = runcmd("umount -v #{mount_point}")
 
 		# skip warning from verbose umount
-		error = nil if error && error.chomp.strip == 'NFSv4 mount point detected'
+		#error = nil if error && error.chomp.strip == 'NFSv4 mount point detected'
 
-		if info && !error
+		#if info && !error
+		if info.index("umounted")
 			@log.write('[OK]', 'green')
 		else
 			@log.write('[FAILED}', 'red')
