@@ -3,12 +3,12 @@ version 44
 
 conserve:
 	to do:
-			2. Rewrite Add_functions#runcmd to return chomp-ed values. And fix all methods broken after that.
-			3. Destroy Backup#check_mount_stat method. Need to rewrite a little two other methods.
-			4. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
-			5. Add backup of multiple sources to one file.
-			6. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
-			7. Send report without creating log file. Should create array of strings that sended to @log and send this array in report.
+			1. Rewrite Add_functions#runcmd to return chomp-ed values. And fix all methods broken after that.
+			2. Destroy Backup#check_mount_stat method. Need to rewrite a little two other methods.
+			3. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
+			4. Add backup of multiple sources to one file.
+			5. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
+			6. Send report without creating log file. Should create array of strings that sended to @log and send this array in report.
 
 	0.2.1
 		+	1. HUDGE CODE REFACTORING.
