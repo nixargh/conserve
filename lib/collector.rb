@@ -199,7 +199,7 @@ class Collector
 				end
 			end
 		}
-		if !bootloader
+		if bootloader.empty?
 			@creatures['partition'].each{|hdd|
 				hdd['partitions'].each{|partition|
 					if partition['has_grub_mbr']
