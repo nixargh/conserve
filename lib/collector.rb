@@ -119,6 +119,7 @@ class Collector
 				partitions['partitions'] = read_partitions(hdd['name'])
 				partitions['partitions'].each{|partition|
 					partition['uuid'], partition['type'], partition['label'] = get_uuid_type_label(partition['name'])
+					partition['has_grub_mbr'] = find_grub_mbr(partition['name'])
 					#partition['label'] = get_label(partition['name'])
 				}
 				partition_list.push(partitions)

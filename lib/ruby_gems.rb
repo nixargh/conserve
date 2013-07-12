@@ -105,9 +105,11 @@ class Ruby_gems
 		rel_info = IO.read("/etc/#{rel_file}")
 		rel_info = s_to_a(rel_info)
 		if rel_info[0].index('SUSE Linux Enterprise Server 11')
-			os = 'SLES11' if rel_info[2].chomp == 'PATCHLEVEL = 0'
-			os = 'SLES11 sp.1' if rel_info[2].chomp == 'PATCHLEVEL = 1'
-			arch = ((rel_info[0].split('('))[1].split(')'))[0]
+#			os = 'SLES11' if rel_info[2].chomp == 'PATCHLEVEL = 0'
+#			os = 'SLES11 sp.1' if rel_info[2].chomp == 'PATCHLEVEL = 1'
+#			arch = ((rel_info[0].split('('))[1].split(')'))[0]
+			os = 'SLES11'
+			arch = nil
 		elsif rel_info[0] == 'DISTRIB_ID=Ubuntu'
 			os = 'Ubuntu'
 			arch = nil
@@ -137,7 +139,7 @@ class Ruby_gems
 			ftp.login('anonymous', '1212121212')
 			# detect OS and arch to understand what rpms to download
 			os = detect_os
-			if (os[0] == 'SLES11' || os[0] == 'SLES11 sp.1')
+			if os[0] == 'SLES11'
 				@log.write("\t\t\t\t\t#{os[0]} with #{os[1]} architecture detected.")
 				ftp.chdir(@SLES11_i586_rpm_dir) if os[1] == 'i586'
 			else
