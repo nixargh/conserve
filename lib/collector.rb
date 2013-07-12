@@ -88,7 +88,6 @@ class Collector
 		dm_raids = Array.new
 			info, error = runcmd("dmraid -s -c -c -c")
 			if info
-				info.chomp!.strip!
 				if info != 'no raid disks'
 					info.each_line{|line|
 						line = line.split(':')
@@ -356,7 +355,6 @@ class Collector
 	def get_label(device) # gets device label
 		info, error = runcmd("e2label #{device}")
 		if info && !error
-			info.chomp!.strip!
 			return info if !info.empty?
 		end
 		nil

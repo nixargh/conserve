@@ -335,7 +335,7 @@ class Backup
 		if !error
 			info.each_line{|line|
 				share, client = line.split(' ')
-				line.chomp!.strip!
+				line.chomp!
 				if dir == share
 					return true
 				end

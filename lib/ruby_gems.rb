@@ -15,6 +15,7 @@
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Ruby_gems
 	attr_accessor :log
+	include Add_functions
 
 	def initialize
 		@rpm_download_site = 'magic-beans.org'

@@ -1,5 +1,5 @@
 Conserve history.
-version 45 
+version 46 
 
 conserve:
 	to do:
@@ -40,6 +40,7 @@ conserve:
 							        undefined method `write' for nil:NilClass
 		+	27. Add_functions#runcmd rewrited to return chomp-ed values.
 		+	28. Backup#check_mount_stat method destroyed.
+		+	29. [BUG] Fixed: SLES11: undefined method `s_to_a' for #<Ruby_gems:0x7f0f823a7760>
 
 	0.2.0
 		+	1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.
