@@ -199,6 +199,19 @@ class Collector
 				end
 			end
 		}
+		if !bootloader
+			@creatures['partition'].each{|hdd|
+				hdd['partitions'].each{|partition|
+					if partition['has_grub_mbr']
+						if partition['name'] == find_boot_partition
+							bootloader['bootloader_on'] = partition['name']
+							bootloader['bootloader_type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
+							bootloader['partition'] = partition['name']
+						end
+					end
+				}
+			}
+		end
 		bootloader
 	end
 
