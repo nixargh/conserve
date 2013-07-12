@@ -52,12 +52,15 @@ module Add_functions
 			cmd_error = IO.read(temp_log_err)
 			cmd_info = IO.read(temp_log)
 			exit_code = IO.read(temp_exit_code)
+			cmd_error.chomp!
+			cmd_info.chomp!
+			exit_code.chomp!
 			cmd_error = nil if cmd_error.empty?
 			cmd_info = nil if cmd_info.empty?
 			if exit_code.empty?
 				exit_code = nil
 			else
-				exit_code = exit_code.chomp.to_i
+				exit_code = exit_code.to_i
 			end
 			return cmd_info, cmd_error, exit_code
 		rescue

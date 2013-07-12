@@ -2,7 +2,7 @@
 #### INFO ######################################################################
 # Conserve - linux backup tool.
 # (*w) author: nixargh <nixargh@gmail.com>
-$version = '0.2.1.26'
+$version = '0.2.1.28'
 #### LICENSE ###################################################################
 #Conserve - linux backup tool.
 #Copyright (C) 2013  nixargh <nixargh@gmail.com>

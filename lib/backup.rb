@@ -195,7 +195,7 @@ class Backup
 	def mount(what, type, where = @mount_point) # mount destinations of different types
 		if @mounted[what]
 			path = @mounted[what]
-			@log.write("\t\tDevice #{what} already mounted at #{path}.")
+			@log.write("\t\t\tDevice #{what} already mounted at #{path}.")
 		else
 			if File.directory?(where)
 				if type == 'smb'
@@ -221,9 +221,18 @@ class Backup
 		if check_online(server)
 			mount_dir = create_random_dir(where)
 			create_cred_file if File.exist?(@credential_file) == false
-			mount_stat = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
-			mount_check = check_mount_stat(mount_stat, what, mount_dir)
-			mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
+
+			@log.write_noel("\t\t\tMounting #{what} to #{mount_dir} - ")
+			info, error, exit_code = runcmd("mount -t cifs #{what} #{mount_dir} -o credentials=#{@credential_file}")
+			if exit_code == 0
+				path = mount_dir
+				@mounted[what] = mount_dir
+				@log.write("[OK]", 'green')
+				@log.write("\t\t\t\tWarning: #{error}.", "yellow") if error
+			else
+				@log.write('[FAILED}', 'red')
+				raise "Can't mount #{what} to #{mount_dir}: #{error}."
+			end
 			raise "File creation test on share #{what} failed: #{$!}." if !dir_writable?(path)
 		else
 			raise "#{server} isn't online."
@@ -253,12 +262,11 @@ class Backup
 			while !done do
 				@log.write_noel("\t\t\tMounting #{what} using #{mount_bin} to #{mount_dir} - ")
 				info, error = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
-				error.chomp!.strip! if error
 				if !error
 					@log.write("[OK]", 'green')
 					done = true
 					path = mount_dir
-					@mounted[what] = path
+					@mounted[what] = mount_dir
 				elsif error == "mount.nfs4: Protocol not supported"
 					@log.write("[FAILED] - NFS4 not supported", 'yellow')
 					mount_bin = "mount.nfs"
@@ -290,11 +298,19 @@ class Backup
 	end
 
 	def mount_local(what, where) # mounts local device
-		@log.write("\t\tMounting local disk: ", 'yellow')
+		@log.write("\t\t\tMounting local disk: ", 'yellow')
 		mount_dir = create_random_dir(where)
-		mount_stat = runcmd("mount #{what} #{mount_dir}")
-		mount_check = check_mount_stat(mount_stat, what, mount_dir)
-		mount_check[0] == 0 ? (path = mount_dir) : (raise mount_check[1])
+		@log.write_noel("\t\t\t\tMounting #{what} to #{mount_dir} - ")
+		info, error, exit_code = runcmd("mount #{what} #{mount_dir}")
+		if exit_code == 0
+			path = mount_dir
+			@mounted[what] = mount_dir
+			@log.write("[OK]", 'green')
+			@log.write("\t\t\t\t\tWarning: #{error}.", "yellow") if error
+		else
+			@log.write('[FAILED}', 'red')
+			raise "Can't mount #{what} to #{mount_dir}: #{error}."
+		end
 		path
 	end
 	
@@ -312,27 +328,6 @@ class Backup
 			@log.write('[FAILED}', 'red')
 			false
 		end
-	end
-
-	def check_mount_stat(mount_stat, what, mount_dir) # analize mount feedback information
-		begin
-			info, error = mount_stat
-			status = 0
-			@mounted[what] = mount_dir
-			if error
-				@log.write("\t\t\t#{what} NOT mounted to #{mount_dir} - ")
-			elsif info && !error
-				@log.write_noel("\t\t\t#{what} mounted to #{mount_dir} with warnings: #{info}. - ")
-				@log.write("[OK]", 'green')
-			else
-				@log.write_noel("\t\t\t#{what} mounted to #{mount_dir}. - ")
-				@log.write("[OK]", 'green')
-			end
-		rescue
-			status = 1
-			error = $!
-		end
-		result = [status, error]
 	end
 
 	def check_nfs_dir(server, dir) # checks existance of NFS share on server (will be good to check if you belongs to clients)
@@ -366,13 +361,9 @@ class Backup
 
 	def umount!(mount_point) # unmounting mount point in verbose mode
 		@log.write_noel("\t\t\tUnmounting #{mount_point}. - ")
-		info, error = runcmd("umount -v #{mount_point}")
+		info, error, exit_code = runcmd("umount #{mount_point}")
 
-		# skip warning from verbose umount
-		#error = nil if error && error.chomp.strip == 'NFSv4 mount point detected'
-
-		#if info && !error
-		if info.index("umounted")
+		if exit_code == 0
 			@log.write('[OK]', 'green')
 		else
 			@log.write('[FAILED}', 'red')
@@ -629,7 +620,6 @@ class Backup
 			error_a = Array.new
 			warnings = Array.new
 			error.each_line{|line|
-				line.chomp!.strip!
 				if line.index("tar: Removing leading `/\' from")
 					next
 				elsif line.index("socket ignored")

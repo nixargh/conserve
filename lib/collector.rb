@@ -134,8 +134,8 @@ class Collector
 			backup_dir = "/tmp/vgcfgbackup"
 			backup_files = Array.new
 			Dir.mkdir(backup_dir) if !File.directory?(backup_dir)
-			dir = Dir.open(backup_dir)
 			info, error = runcmd("vgcfgbackup -f #{backup_dir}/%s")
+			dir = Dir.open(backup_dir)
 			raise "Can't collect LVM info: #{error}." if error
 			dir.each{|file|
 				if file != '.' && file !='..'
@@ -162,7 +162,7 @@ class Collector
 		info, error = runcmd("lvdisplay -c #{vg}")
 		if !error
 			info.each_line{|line|
-				line.chomp!.strip!
+				line.strip!
 				lv = line.split(':')[0]
 				lvs.push(lv)
 			}
