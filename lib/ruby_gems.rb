@@ -158,10 +158,9 @@ class Ruby_gems
 					else
 						raise "setup.rb failed: #{$!}"
 					end
-				else
-					raise "Can't find setup.rb"
 				end
 			}
+			raise "Can't find setup.rb"
 		rescue
 			@log.write('[FAILED]', 'red')
 			raise "Can't install rubygems from tarball: #{$!}."
