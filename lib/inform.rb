@@ -348,7 +348,7 @@ class Inform
 			conf_info['mail_to'] = $stdin.gets.chomp
 			@log.write_noel("\t\t\t\tSend copy to: ", 'sky_blue', true)
 			conf_info['copy_to'] = $stdin.gets.chomp
-			@log.write_noel("\t\t\tSend mail from: ", 'sky_blue', true)
+			@log.write_noel("\t\t\t\tSend mail from: ", 'sky_blue', true)
 			conf_info['mail_from'] = $stdin.gets.chomp
 		end
 		if File.directory?(File.dirname(@config_file))

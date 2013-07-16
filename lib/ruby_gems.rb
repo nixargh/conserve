@@ -18,9 +18,7 @@ class Ruby_gems
 	include Add_functions
 
 	def initialize
-		@rpm_download_site = 'magic-beans.org'
-		@SLES11_i586_rpm_dir = '/conserve/additional_rpms/SLES11/i586'
-		@SLES11_i586_rpms = ['ruby-1.8.7.p352-1.1.i586.rpm', 'ruby-devel-1.8.7.p352-1.1.i586.rpm', 'rubygems-1.3.7-10.1.i586.rpm']
+		@rubygems_tarball_url = 'http://files.rubyforge.vm.bytemark.co.uk/rubygems/rubygems-1.8.25.tgz'
 	end
 	
 	def install_rubygems
@@ -39,30 +37,26 @@ class Ruby_gems
 					`apt-get -y install rubygems`
 				elsif os == 'CentOS'
 					`yum -y install rubygems`
-				elsif os.index('SLES11')
+				else
 					while answer != 'y' && answer != 'n' do
-						@log.write_noel("\t\t\t\t\tInstall it from ftp://#{@rpm_download_site}? [y|n]: ", 'sky_blue', true)
+						@log.write_noel("\t\t\t\t\tDownload and install it from #{@rubygems_tarball_url}? [y|n]: ", 'sky_blue', true)
 						answer = $stdin.gets.chomp
 					end
 					if answer == 'n'
-			                        raise "Inform aborded"
+						raise "Inform aborded"
 					else
 						download_dir = "/tmp/ruby_rpms_temp"
 						Dir.mkdir(download_dir)
-						Dir.chdir(download_dir)
-						get_rubygems_rpms
-						install_rubygems_rpms
+						rubygems_tarball = get_rubygems(download_dir)
+						install_rubygems_tarball(rubygems_tarball)
 					end
-				else
-					raise 'Don\'t know how to install ruby gem package for your OS. Please do it manually and rerun this job'
 				end
 			ensure
 				if download_dir
-					Dir.entries(download_dir).each{|file|
-						File.unlink(file) if file != '.' && file != '..'
-					}
-					Dir.unlink(download_dir)
-					Dir.chdir
+					info, error, exit_code = runcmd("rm -fr #{download_dir}")
+					if exit_code != 0
+						@log.write("\t\t\t\t\t\tCan't delete #{download_dir}: #{$!}", 'yellow')
+					end
 				end
 			end
 		end
@@ -94,7 +88,7 @@ class Ruby_gems
 	end
 
 ###########
-	private
+#	private
 ###########
 	
 	def detect_os
@@ -105,9 +99,6 @@ class Ruby_gems
 		rel_info = IO.read("/etc/#{rel_file}")
 		rel_info = s_to_a(rel_info)
 		if rel_info[0].index('SUSE Linux Enterprise Server 11')
-#			os = 'SLES11' if rel_info[2].chomp == 'PATCHLEVEL = 0'
-#			os = 'SLES11 sp.1' if rel_info[2].chomp == 'PATCHLEVEL = 1'
-#			arch = ((rel_info[0].split('('))[1].split(')'))[0]
 			os = 'SLES11'
 			arch = nil
 		elsif rel_info[0] == 'DISTRIB_ID=Ubuntu'
@@ -130,55 +121,50 @@ class Ruby_gems
 		end
 	end
 	
-	def	get_rubygems_rpms
+	def	get_rubygems(where)
 		begin
-			# use net/ftp
-			require 'net/ftp'
-			ftp = Net::FTP.new
-			ftp.connect(@rpm_download_site,21)
-			ftp.login('anonymous', '1212121212')
-			# detect OS and arch to understand what rpms to download
-			os = detect_os
-			if os[0] == 'SLES11'
-				@log.write("\t\t\t\t\t#{os[0]} with #{os[1]} architecture detected.")
-				ftp.chdir(@SLES11_i586_rpm_dir) if os[1] == 'i586'
-			else
-				raise "Don't have FTP directory for \"#{os[0]}\" #{os[1]}"
-			end
-			@SLES11_i586_rpms.each{|file|
-				@log.write("\t\t\t\t\tDownloading #{file} from #{@rpm_download_site}...")
-				ftp.getbinaryfile(file,"./#{file}")
+			@log.write_noel("\t\t\t\t\tDownloading rubygems tarball from #{@rubygems_tarball_url} - ")
+			require 'net/http'
+			proto, trash, host, link = @rubygems_tarball_url.split('/', 4)
+			destination = "#{where}/rubygems.tgz"
+			Net::HTTP.start(host){ |http|
+				resp = http.get("/#{link}")
+				File.open(destination, 'wb'){ |file|
+					file.write(resp.body)
+				}
 			}
-		rescue LoadError
-			# use wget
-			raise "NEED TO WRITE FTP DOWNLOAD WITH \"WGET\""
-		rescue RuntimeError
-			raise "FTP download failed: #{$!}"
+			raise "File #{destination} not found" if !File.exist?(destination)
+			@log.write('[OK]', 'green')
+			destination
 		rescue
-			raise "FTP download failed: #{$!}"
-		ensure
-			ftp.close
+			@log.write('[FAILED]', 'red')
+			raise "Can't download rubygems tarball: #{$!}."
 		end
 	end
 	
-	def install_rubygems_rpms
-		Dir.entries(Dir.pwd).each{|file| 
-			if /ruby-\d/ =~ file
-				@log.write("\t\t\t\t\tUpgrading ruby by #{file}...")
-				`rpm -U #{file} 2>/dev/null`
-			end
-		}
-		Dir.entries(Dir.pwd).each{|file|
-			if /ruby-devel-\d/ =~ file
-				@log.write("\t\t\t\t\tInstalling #{file}...")
-				`rpm -i #{file} 2>/dev/null`
-			end
-		}
-		Dir.entries(Dir.pwd).each{|file|
-			if /rubygems-\d/ =~ file
-				@log.write("\t\t\t\t\tInstalling #{file}...")
-				`rpm -i #{file} 2>/dev/null`
-			end
-		}
+	def install_rubygems_tarball(tarball)
+		begin
+			@log.write_noel("\t\t\t\t\tInstalling rubygems from tarball \"#{tarball}\" - ")
+			extract_dir = File.dirname(tarball)
+			info, error, exit_code = runcmd("tar -xzf #{tarball} -C #{extract_dir}")
+			raise "Can't extract rubygems tarball: #{error}" if exit_code != 0
+			require 'find'
+			Find.find(extract_dir){ |path|
+				if File.basename(path) == 'setup.rb'
+					info, error, exit_code = runcmd("ruby #{path}")
+					if exit_code == 0
+						@log.write('[OK]', 'green')
+						return true
+					else
+						raise "setup.rb failed: #{$!}"
+					end
+				else
+					raise "Can't find setup.rb"
+				end
+			}
+		rescue
+			@log.write('[FAILED]', 'red')
+			raise "Can't install rubygems from tarball: #{$!}."
+		end
 	end
 end

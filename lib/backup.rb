@@ -261,7 +261,7 @@ class Backup
 			what = "#{server}:#{path}"
 			while !done do
 				@log.write_noel("\t\t\tMounting #{what} using #{mount_bin} to #{mount_dir} - ")
-				info, error = runcmd("#{mount_bin} -w #{what} #{mount_dir}")
+				info, error = runcmd("#{mount_bin} #{what} #{mount_dir} -w")
 				if !error
 					@log.write("[OK]", 'green')
 					done = true
