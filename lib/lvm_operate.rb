@@ -78,7 +78,10 @@ class LVM_operate
 	def delete_snapshot(device)
 		action = "lvremove -f #{device}"
 		info, error = do_it(action)
-		if error.index("Can't remove open logical volume")
+		if error && error.index("Can't remove open logical volume")
+			dev_f, lg, lv = device.split('/')
+			dmdevice = "#{lg}-#{lv}"
+			dmdevice-cow = "#{dmdevice}-cow"
 			info, error, exit_code = runcmd("dmsetup remove #{device}")
 			if exit_code == 0
 				info, error = do_it(action)
