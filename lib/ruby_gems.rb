@@ -18,7 +18,8 @@ class Ruby_gems
 	include Add_functions
 
 	def initialize
-		@rubygems_tarball_url = 'http://files.rubyforge.vm.bytemark.co.uk/rubygems/rubygems-1.8.25.tgz'
+		#@rubygems_tarball_url = 'http://files.rubyforge.vm.bytemark.co.uk/rubygems/rubygems-1.8.25.tgz'
+		@rubygems_tarball_url = 'http://production.cf.rubygems.org/rubygems/rubygems-2.0.4.tgz'
 	end
 	
 	def install_rubygems
