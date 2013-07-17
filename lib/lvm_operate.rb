@@ -75,18 +75,21 @@ class LVM_operate
 	
 	# convert_to_non_mapper method moved to Add_functions
 
-	def delete_snapshot(device)
+	def delete_snapshot(device) # delets LVM snapshot
 		action = "lvremove -f #{device}"
 		info, error = do_it(action)
+
+		# next "if" is a workaround to bug, when lvm not syncing with udev and you can't remove lv by lvremove 
 		if error && error.index("Can't remove open logical volume")
 			dev_f, lg, lv = device.split('/')
 			dmdevice = "#{lg}-#{lv}"
 			dmdevice-cow = "#{dmdevice}-cow"
-			info, error, exit_code = runcmd("dmsetup remove #{device}")
+			info, error, exit_code = runcmd("dmsetup remove #{dmdevice} && dmsetup remove #{dmdevice-cow}")
 			if exit_code == 0
 				info, error = do_it(action)
 			end
 		end
+
 		return info, error
 	end
 
