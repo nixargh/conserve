@@ -84,7 +84,7 @@ class LVM_operate
 				info, error = do_it(action)
 			end
 		end
-		info, error
+		return info, error
 	end
 
 	def get_size(device)
