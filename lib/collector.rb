@@ -175,7 +175,8 @@ class Collector
 	def get_mount_info # collect information about how to mount partitions
 		mounts = Array.new
 		IO.read('/etc/fstab').each_line{|line|
-			if line.index('#') != 0
+			line.chomp!.strip!
+			if !line.empty? && line.index('#') != 0
 				device = Hash.new
 				device['mount_info'] = line.split(' ') 
 				device_name = device['mount_info'][0]
