@@ -1,0 +1,12 @@
+util-linux
+coreutils
+e2fsprogs
+gzip
+hostname
+lvm2
+mount
+cifs-utils
+nfs-common
+iputils-ping
+tar
+debianutils
