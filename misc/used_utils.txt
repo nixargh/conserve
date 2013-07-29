@@ -1,6 +1,5 @@
 blkid
 blockdev
-cp
 dd
 df
 dmraid

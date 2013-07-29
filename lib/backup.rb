@@ -21,7 +21,6 @@ class Backup
 		@destination = destination
 		@dest_target_type = dest_target_type
 		@source = source
-		@share_type = 'smb'
 		@mounted = Hash.new
 		@mount_point = '/mnt'
 		@credential_file = '/root/credential'
@@ -584,15 +583,19 @@ class Backup
 	def create_file_copy!(source_file, destination_file) # copy file from to
 		@log.write_noel("\t\t\tRunning copy of #{source_file} to #{destination_file} - ")
 		begin
-			FileUtils.copy_entry(source_file, destination_file, preserve = true, remove_destination = true)
-# It's coreutils variation of the same copy
-#		info, error = runcmd("cp -rf #{source_file} #{destination_file}")
-#		if !error
-#			@log.write('[OK]', 'green')
-#		else	
-#			@log.write('[FAILED]', 'red')
-#			raise "Files copy failed: #{error}."
-#		end
+			FileUtils.copy_entry(source_file, destination_file) 
+			#  "remove_destination = true" and "preserve = true" failed when copying symlink
+
+	# It's coreutils variation of the same copy
+	#		info, error = runcmd("cp -rf #{source_file} #{destination_file}")
+	#		if !error
+	#			@log.write('[OK]', 'green')
+	#		else	
+	#			@log.write('[FAILED]', 'red')
+	#			raise "Files copy failed: #{error}."
+	#		end
+
+
 			if File.exist?(destination_file)
 				@log.write('[OK]', 'green')
 			else	
@@ -600,6 +603,7 @@ class Backup
 			end
 		rescue
 			@log.write('[FAILED]', 'red')
+			puts $!.backtrace
 			raise "Files copy failed: #{$!}."
 		end
 	end

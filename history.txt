@@ -1,9 +1,9 @@
 Conserve history.
-version 49 
+version 50 
 
 conserve:
 	to do:
-			1. [BUG] SLES11: Wrong label at collected info.
+			1. ??? [BUG] SLES11: Wrong label at collected info.
 			2. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
 			3. Add backup of multiple sources to one file.
 			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
@@ -43,7 +43,7 @@ conserve:
 			28. Backup#check_mount_stat method destroyed.
 			29. [BUG] Fixed: SLES11: undefined method `s_to_a' for #<Ruby_gems:0x7f0f823a7760>
 			30. Added bootloader detection on partitions.	
-			31. Remove FTP download of rubygems for SLES11. Change it by rubygems from http://rubyforge.org
+			31. Remove FTP download of rubygems for SLES11. Changed by rubygems tarball from http://rubyforge.org
 
 	0.2.0
 			1. [BUG] Backup#mount_smb: wrong mount.cifs option '-o credential ' was changed to actual '-o credentials'. That affect only some systems.

@@ -297,7 +297,11 @@ class Collector
 
 	def find_grub_mbr(device) # detect if there is GRUB's info at hdd mbr
 		info, error = runcmd("dd bs=512 count=1 if=#{device} 2>/dev/null")
-		info.index('GRUB') ? true : false
+		if info
+			info.index('GRUB') ? true : false
+		else
+			false
+		end
 	end
 
 	def list_disks! # create list with sizes of different disk devices on current machine
