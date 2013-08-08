@@ -16,7 +16,8 @@
 # along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 
 class Log
-  attr_accessor :start_time, :log_file
+  attr_accessor :start_time
+  attr_reader :log_file
 
   def initialize()
     @log_file = nil
@@ -80,7 +81,7 @@ class Log
       status = 1
       error = $!
     end
-    result = [status, error]
+    [status, error]
   end
 
   # Painting text if color defined.
