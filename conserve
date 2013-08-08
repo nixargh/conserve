@@ -24,194 +24,193 @@ $version = '0.3.0.0'
 require 'fileutils'
 #### CLASES ####################################################################
 class Conserve
-	def initialize
-		@debug = false
-		@lib_dir = '/usr/lib/conserve'
-		ENV['PATH'] = "#{ENV['PATH']}:/sbin:/usr/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin"
-		@params = nil
-		@log = nil
-		@error = nil
-		@lvm = nil
-	end
+  def initialize
+    @debug = false
+    @lib_dir = '/usr/lib/conserve'
+    ENV['PATH'] = "#{ENV['PATH']}:/sbin:/usr/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin"
+    @params = nil
+    @log = nil
+    @error = nil
+    @lvm = nil
+  end
 
-	def run # run all that staff
-		begin
-			load_libraries!
-			parse_arguments!
-			start_logging!
-			@log.write("Conserve started v.#{$version}.",'yellow')
-			collect_sysinfo!
-			if @params['baremetal']
-				start_baremetal!
-			else
-				start_lvm! if @params['use_lvm']
-				start_backup!
-			end
-		rescue
-			if @log
-				@error = $!
-				@log.write_noel("Conserve#run error: ", 'red')
-				@log.write(@error, 'yellow')
-				@log.write(@error.backtrace, 'sky_blue') if @debug
-			else
-				raise $!
-			end
-		ensure
-			if @params
-				inform! if @params['inform']
-			end
-		end
-	end
+  def run # run all that staff
+    begin
+      load_libraries!
+      parse_arguments!
+      start_logging!
+      @log.write("Conserve started v.#{$version}.",'yellow')
+      collect_sysinfo!
+      if @params[:baremetal]
+        start_baremetal!
+      else
+        start_lvm! if @params[:use_lvm]
+        start_backup!
+      end
+    rescue
+      if @log
+        @error = $!
+        @log.write_noel("Conserve#run error: ", 'red')
+        @log.write(@error, 'yellow')
+        @log.write(@error.backtrace, 'sky_blue') if @debug
+      else
+        raise $!
+      end
+    ensure
+      if @params
+        inform! if @params[:inform]
+      end
+    end
+  end
 
-	private
+  private
 
-	def load_libraries! # loads additional Classses
-		File.directory?("./lib") ? $LOAD_PATH.unshift("./lib") : $LOAD_PATH.unshift(@lib_dir)
-		require 'add_functions'
-		require 'lvm_operate'
-		require 'backup'
-		require 'operate'
-		require 'inform'
-		require 'ruby_gems'
-		require 'log'
-		require 'collector'
-		require 'baremetal'
-	end
+  def load_libraries! # loads additional Classses
+    File.directory?("./lib") ? $LOAD_PATH.unshift("./lib") : $LOAD_PATH.unshift(@lib_dir)
+    require 'optparse'
+    require 'add_functions'
+    require 'lvm_operate'
+    require 'backup'
+    require 'operate'
+    require 'inform'
+    require 'ruby_gems'
+    require 'log'
+    require 'collector'
+    require 'baremetal'
+  end
 
-	def parse_arguments! # parse command line arguments
-		operate = Operate.new
-		@params = operate.read_arguments
-		@debug = @params['debug']
-		puts @params if @debug
-	end
+  def parse_arguments! # parse command line arguments
+    @params = parse_options
+    @debug = @params[:debug]
+  end
 
-	def start_logging! # configure output
-		log = Log.new
-		if @params['log_enabled']
-			log.enable # start log to file instead of stdout
-			log.file = @params['log_file']
-		end
-		@log = log
-		if @debug
-			@log.write_noel("Logging started.", 'yellow')
-			@params['log_enabled'] ? @log.write(" Logging to file - #{log.file}.") : @log.write
-		end
-	end
+  def start_logging! # configure output
+    log = Log.new
+    if @params[:log_enabled]
+      log.enable # start log to file instead of stdout
+      log.file = @params[:log_file]
+    end
+    @log = log
+    if @debug
+      @log.write_noel("Logging started.", 'yellow')
+      @params[:log_enabled] ? @log.write(" Logging to file - #{log.file}.") : @log.write
+    end
+  end
 
-	def collect_sysinfo! # collect system information about disk, raids, partitions, lvm and mounts
-		collector = Collector.new
-		@sysinfo = collector.collect
-		@log.write("SysInfo collected.", 'yellow') if @debug
-		save_sysinfo! if @params['collect']
-	end
+  def collect_sysinfo! # collect system information about disk, raids, partitions, lvm and mounts
+    collector = Collector.new
+    @sysinfo = collector.collect
+    @log.write("SysInfo collected.", 'yellow') if @debug
+    save_sysinfo! if @params[:collect]
+  end
 
-	def save_sysinfo! # saves system information to file 
-		if @params['collect_dir'] || @params['destination']
-			destination = @params['collect_dir'] ? @params['collect_dir'] : @params['destination']
-			if File.directory?(destination)
-					file = "#{destination}/#{`hostname -f`.chomp.strip}.info"
-					require 'yaml'
-					File.open(file, 'w'){|file|
-						file.write(@sysinfo.to_yaml)	
-					}
-					@log.write("SysInfo saved.", 'yellow') if @debug
-			else
-				@params['sysinfo_save_at_backup'] = true 
-			end
-		else
-			raise "Can't save system information because nor path nor destination not specified."
-		end
-	end
-	
-	def start_baremetal! # creates and a number of backup jobs to create full backup
-		@log.write("Baremetal started.", 'yellow') if @debug
-		save_sysinfo!
-		baremetal = Baremetal.new
-		baremetal.sysinfo = @sysinfo
-		if @params['dest_target_type'] == 'file'
-			dest = File.dirname(@params['destination'])
-			@params['dest_target_type'] = 'dir'
-		elsif @params['dest_target_type'] == 'dir'
-			dest = @params['destination']
-		end
-		baremetal.destination = dest
-		baremetal.exclude = @params['exclude']
-		jobs = baremetal.create_jobs_list
-		start_lvm!
-		jobs.each{|job|
-			job = @params.merge(job)
-			start_backup!(job)
-		}
-	end
+  def save_sysinfo! # saves system information to file 
+    if @params[:collect_dir] || @params[:destination]
+      destination = @params[:collect_dir] ? @params[:collect_dir] : @params[:destination]
+      if File.directory?(destination)
+          file = "#{destination}/#{`hostname -f`.chomp.strip}.info"
+          require 'yaml'
+          File.open(file, 'w'){|file|
+            file.write(@sysinfo.to_yaml)  
+          }
+          @log.write("SysInfo saved.", 'yellow') if @debug
+      else
+        @params[:sysinfo_save_at_backup] = true 
+      end
+    else
+      raise "Can't save system information because nor path nor destination not specified."
+    end
+  end
+  
+  def start_baremetal! # creates and a number of backup jobs to create full backup
+    @log.write("Baremetal started.", 'yellow') if @debug
+    save_sysinfo!
+    baremetal = Baremetal.new
+    baremetal.sysinfo = @sysinfo
+    if @params[:dest_target_type] == 'file'
+      dest = File.dirname(@params[:destination])
+      @params[:dest_target_type] = 'dir'
+    elsif @params[:dest_target_type] == 'dir'
+      dest = @params[:destination]
+    end
+    baremetal.destination = dest
+    baremetal.exclude = @params[:exclude]
+    jobs = baremetal.create_jobs_list
+    start_lvm!
+    jobs.each{|job|
+      job = @params.merge(job)
+      start_backup!(job)
+    }
+  end
 
-	def start_lvm!
-		@lvm = LVM_operate.new
-		@lvm.log = @log
-	end
+  def start_lvm!
+    @lvm = LVM_operate.new
+    @lvm.log = @log
+  end
 
-	def start_backup!(params=@params) # runs backup job
-		@log.write("Backup started.", 'yellow') if @debug
-		raise "You have to specify source and destination for backup." if !params['source'] || !params['destination']
-		backup = Backup.new(params['source'], params['destination'], params['dest_target_type'])
-		backup.log = @log
-		backup.mbr = true if params['mbr']
-		backup.job_name = params['job_name']
-		backup.lvm = params['use_lvm'] ? @lvm : nil
-		backup.mount_point = params['mount_point'] if params['mount_point']
-		backup.credential_file = params['cred_file'] if params['cred_file']
-		backup.archive = true if params['archive']
-		backup.plain = params['plain_files_tree'] if params['plain_files_tree']
-		backup.rsync_options = params['rsync_options'] if params['rsync_options']
-		if params['sysinfo_save_at_backup']
-			backup.sysinfo = @sysinfo
-			@params['sysinfo_save_at_backup'] = false 
-		end
-		backup.create!
-	end
+  def start_backup!(params=@params) # runs backup job
+    @log.write("Backup started.", 'yellow') if @debug
+    raise "You have to specify source and destination for backup." if !params['source'] || !params['destination']
+    backup = Backup.new(params['source'], params['destination'], params['dest_target_type'])
+    backup.log = @log
+    backup.mbr = true if params[:mbr]
+    backup.job_name = params[:job_name]
+    backup.lvm = params[:use_lvm] ? @lvm : nil
+    backup.mount_point = params[:mount_point] if params[:mount_point]
+    backup.credential_file = params[:cred_file] if params[:cred_file]
+    backup.archive = true if params[:archive]
+    backup.plain = params[:plain_files_tree] if params[:plain_files_tree]
+    backup.rsync_options = params[:rsync_options] if params[:rsync_options]
+    if params[:sysinfo_save_at_backup]
+      backup.sysinfo = @sysinfo
+      @params[:sysinfo_save_at_backup] = false 
+    end
+    backup.create!
+  end
 
-	def inform! # creates report
-		@log.write("Inform started.", 'yellow') if @debug
-		check_inform_gems!
-		inform = Inform.new
-		inform.log = @log
-		@params['job_name'] ? (inform.job_name = @params['job_name']) : (inform.job_name = "Conserve Backup Job")
-		inform.config_file = @params['inform']
-		inform.error = @error
-		inform.run!
-	end
+  def inform! # creates report
+    @log.write("Inform started.", 'yellow') if @debug
+    check_inform_gems!
+    inform = Inform.new
+    inform.log = @log
+    @params[:job_name] ? (inform.job_name = @params[:job_name]) : (inform.job_name = "Conserve Backup Job")
+    inform.config_file = @params[:inform]
+    inform.error = @error
+    inform.run!
+  end
 
-	def check_inform_gems! # detect if you nedd to install some ruby gems
-		@log.write("Checking ruby gems for Inform.", 'yellow') if @debug
-		ruby_gems = Ruby_gems.new
-		ruby_gems.log = @log
-		if !ruby_gems.check_rubygems
-			@log.write("\t\t\t\"ruby gem\" utility not installed. Inform function require it.", 'red', true)
-			ruby_gems.install_rubygems
-		end
-		if !ruby_gems.gem_installed?('mail')
-			@log.write("\t\t\t\"mail\" ruby gem not installed. Inform function require it.", 'red', true)
-			ruby_gems.install_mail_gem
-		end
-		if ruby_gems.check_rubygems
-			require 'rubygems'
-			if  ruby_gems.gem_installed?('mail')
-				require 'mail'
-			else
-				raise "\"mail\" ruby gem not installed"
-			end
-		else
-			raise "\"ruby gem\" utility not installed"
-		end
-	end
+  def check_inform_gems! # detect if you nedd to install some ruby gems
+    @log.write("Checking ruby gems for Inform.", 'yellow') if @debug
+    ruby_gems = Ruby_gems.new
+    ruby_gems.log = @log
+    if !ruby_gems.check_rubygems
+      @log.write("\t\t\t\"ruby gem\" utility not installed. Inform function require it.", 'red', true)
+      ruby_gems.install_rubygems
+    end
+    if !ruby_gems.gem_installed?('mail')
+      @log.write("\t\t\t\"mail\" ruby gem not installed. Inform function require it.", 'red', true)
+      ruby_gems.install_mail_gem
+    end
+    if ruby_gems.check_rubygems
+      require 'rubygems'
+      if  ruby_gems.gem_installed?('mail')
+        require 'mail'
+      else
+        raise "\"mail\" ruby gem not installed"
+      end
+    else
+      raise "\"ruby gem\" utility not installed"
+    end
+  end
 
 end
 #### FUNCTIONS #################################################################
 #### PROGRAM ###################################################################
 begin
-	conserve = Conserve.new
-	conserve.run
+  conserve = Conserve.new
+  conserve.run
 rescue
-	puts "\t#{$!}"
-#	puts $!.backtrace
-	exit 1
+  puts "\t#{$!}"
+# puts $!.backtrace
+  exit 1
 end
