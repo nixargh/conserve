@@ -70,101 +70,101 @@ help[:inform] = 'Inform about backup status as described at config file;
 If no config file found it will be created.'
 help[:job_name] = 'Set display name for backup job'
 help[:debug] = 'Show mode information about code errors'
-	# Options hash.
-	#
-	options = Hash.new(false)
-	options[:use_lvm] = true
+  # Options hash.
+  #
+  options = Hash.new(false)
+  options[:use_lvm] = true
 
-	# Parse options.
-	#
-	OptionParser.new do |params|
-	  params.banner = "Usage: #{$0} [options]"
+  # Parse options.
+  #
+  OptionParser.new do |params|
+    params.banner = "Usage: #{$0} [options]"
 
-	  params.on('-b', '--baremetal', help[:baremetal]) do
-	    options[:baremetal] = true
-	  end
+    params.on('-b', '--baremetal', help[:baremetal]) do
+      options[:baremetal] = true
+    end
 
-	  params.on('-e', '--exclude device_1,device_2,device_n', Array,
-	    help[:exclude]) do |devices|
-	    options[:devices] = devices
-	  end
+    params.on('-e', '--exclude device_1,device_2,device_n', Array,
+      help[:exclude]) do |devices|
+      options[:devices] = devices
+    end
 
-	  params.on('--[no-]lvm', help[:lvm]) do |parameter|
-	    options[:use_lvm] = parameter
-	  end
+    params.on('--[no-]lvm', help[:lvm]) do |parameter|
+      options[:use_lvm] = parameter
+    end
 
-	  params.on('-z', '--gzip', help[:archive]) do
-	    options[:archive] = true
-	  end
+    params.on('-z', '--gzip', help[:archive]) do
+      options[:archive] = true
+    end
 
-	  params.on('-l', '--log', help[:log_enabled]) do
-	    options[:log_enabled] = true
-	  end
+    params.on('-l', '--log', help[:log_enabled]) do
+      options[:log_enabled] = true
+    end
 
-	  params.on('--[no-]mbr', help[:mbr]) do |parameter|
-	    options[:mbr] = parameter
-	  end
+    params.on('--[no-]mbr', help[:mbr]) do |parameter|
+      options[:mbr] = parameter
+    end
 
-	  params.on('-p', '--plain', help[:plain]) do
-	    options[:plain_files_tree] = true
-	  end
+    params.on('-p', '--plain', help[:plain]) do
+      options[:plain_files_tree] = true
+    end
 
-	  params.on('-s', '--source [SOURCE]', help[:source]) do |source|
-	    options[:source] = source
-	  end
+    params.on('-s', '--source [SOURCE]', help[:source]) do |source|
+      options[:source] = source
+    end
 
-	  params.on('-o', '--rsync_options opt_1,opt_2,opt_n', Array,
-	    help[:rsync_options]) do |opts|
-	    options[:rsync_options] = opts
-	  end
+    params.on('-o', '--rsync_options opt_1,opt_2,opt_n', Array,
+      help[:rsync_options]) do |opts|
+      options[:rsync_options] = opts
+    end
 
-	  params.on('-d', '--dest_file [FILE]', help[:destination]) do |file|
-	    options[:destination] = file
-	    options[:dest_target_type] = 'file'
-	  end
+    params.on('-d', '--dest_file [FILE]', help[:destination]) do |file|
+      options[:destination] = file
+      options[:dest_target_type] = 'file'
+    end
 
-	  params.on('-D', '--dest_dir [PATH]', help[:dest_dir]) do |dir|
-	    options[:destination] = dir
-	    options[:dest_target_type] = 'dir'
-	  end
+    params.on('-D', '--dest_dir [PATH]', help[:dest_dir]) do |dir|
+      options[:destination] = dir
+      options[:dest_target_type] = 'dir'
+    end
 
-	  params.on('-m', '--mount_dir [PATH]', help[:mount_dir]) do |dir|
-	    options[:mountdir] = dir
-	  end
+    params.on('-m', '--mount_dir [PATH]', help[:mount_dir]) do |dir|
+      options[:mountdir] = dir
+    end
 
-	  params.on('-m', '--credential [PATH]', help[:credential]) do |path|
-	    options[:cred_file] = path
-	  end
+    params.on('-m', '--credential [PATH]', help[:credential]) do |path|
+      options[:cred_file] = path
+    end
 
-	  params.on('--collect [PATH]', help[:collect]) do |dir|
-	    options[:collect] = true
-	    options[:collect_dir] = path
-	  end
+    params.on('--collect [PATH]', help[:collect]) do |dir|
+      options[:collect] = true
+      options[:collect_dir] = path
+    end
 
-	  params.on('-i', '--inform [PATH]', help[:inform]) do |path|
-	    options[:inform] = path
-	  end
+    params.on('-i', '--inform [PATH]', help[:inform]) do |path|
+      options[:inform] = path
+    end
 
-	  params.on('-n', '--job-name [NAME]', help[:job_name]) do |name|
-	    options[:job_name] = name
-	  end
+    params.on('-n', '--job-name [NAME]', help[:job_name]) do |name|
+      options[:job_name] = name
+    end
 
-	  params.on('--debug', help[:debug]) do
-	    options[:debug] = true
-	    puts params
-	  end
+    params.on('--debug', help[:debug]) do
+      options[:debug] = true
+      puts params
+    end
 
-	  params.on_tail('-h', '--help', 'Show this message') do
-	    puts help[:help]
-	    puts params
-	    exit
-	  end
+    params.on_tail('-h', '--help', 'Show this message') do
+      puts help[:help]
+      puts params
+      exit
+    end
 
-	  params.on_tail('-v', '--version', 'Show version') do
-	    puts "Conserve - backup tool v.#{$version} (*w)"
-	    exit
-	  end
-	end.parse!
+    params.on_tail('-v', '--version', 'Show version') do
+      puts "Conserve - backup tool v.#{$version} (*w)"
+      exit
+    end
+  end.parse!
 
-	return options
+  return options
 end
