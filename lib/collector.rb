@@ -1,18 +1,19 @@
-#Conserve - linux backup tool.
-#Copyright (C) 2013  nixargh <nixargh@gmail.com>
+# Conserve - linux backup tool.
+# Copyright (C) 2013  nixargh <nixargh@gmail.com>
 #
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#You should have received a copy of the GNU General Public License
-#along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+
 class Collector
   include Add_functions
 
@@ -22,9 +23,6 @@ class Collector
 
   def collect # collect iformation about creatures
     list_disks!
-#   @creatures.sort.each { |creature, value|
-#     @creatures[creature] = eval("get_#{creature}_info")
-#   }
     @creatures['hdd'] = get_hdd_info
     @creatures['md'] = get_md_info
     @creatures['dmraid'] = get_dmraid_info
@@ -37,114 +35,108 @@ class Collector
 
   private
 
-  def get_hdd_info # collect information about phisical disk devices
+  # Collect information about physical disk devices.
+  #
+  def get_hdd_info
     hdd_list = Array.new
-    @disk_list.each { |disk, size|
-      if disk =~ /\A\/dev\/[hs]d[a-z]{1,2}\z/
-        hdd = Hash.new
-        hdd['name'] = disk
-        hdd['size'] = size
-        hdd['blocksize'] = get_device_blocksize(disk)
-        hdd['uuid'], hdd['type'], hdd['label'] = get_uuid_type_label(disk)
-        hdd['has_grub_mbr'] = find_grub_mbr(disk)
-        #hdd['label'] = get_label(disk)
-        hdd_list.push(hdd)
-      end
-    }
+    @disk_list.each do |disk, size|
+      next unless disk =~ /\A\/dev\/[hs]d[a-z]{1,2}\z/
+      hdd = Hash.new
+      hdd['name'] = disk
+      hdd['size'] = size
+      hdd['blocksize'] = get_device_blocksize(disk)
+      hdd['uuid'], hdd['type'], hdd['label'] = get_uuid_type_label(disk)
+      hdd['has_grub_mbr'] = find_grub_mbr(disk)
+      hdd_list.push(hdd)
+    end
     hdd_list
   end
 
-  def get_md_info # collect information about Linux RAID devices
+  # Collect information about Linux RAID devices.
+  #
+  def get_md_info
     md_list = Array.new
-    @disk_list.each { |disk, size|
-      if disk =~ /\A\/dev\/md\d{1,3}\z/
-        raid = Hash.new
-        raid['name'] = disk
-        `cat /proc/mdstat`.each_line { |line|
-          if line.index(File.basename(disk))
-            line.scan(/raid\d{1,2}/) { |raid_lvl|
-              raid['raid_lvl'] = raid_lvl.match(/\d{1,2}/)[0].to_i
-            }
-            raid['members'] = Array.new
-            line.scan(/[hs]d[a-z]{1,2}\d/) { |disk|
-              raid['members'].push("/dev/#{disk}")
-            }
-          end
-        }
-        raid['uuid'], raid['type'], raid['label'] = get_uuid_type_label(disk)
-        #raid['label'] = get_label(raid['name'])
-        raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
-        md_list.push(raid)
+    @disk_list.each do |disk, size|
+      next unless disk =~ /\A\/dev\/md\d{1,3}\z/
+      raid = Hash.new
+      raid['name'] = disk
+      `cat /proc/mdstat`.each_line do |line|
+        next unless line.index(File.basename(disk))
+        raid['raid_lvl'] = parse_raid_lvl(line)
+        raid['members'] = parse_members(line)
       end
-    }
+      raid['uuid'], raid['type'], raid['label'] = get_uuid_type_label(disk)
+      raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
+      md_list.push(raid)
+    end
     md_list
   end
 
-  def get_dmraid_info # collect information about software RAID devices
+  def parse_raid_lvl(line)
+    line.scan(/raid\d{1,2}/) do |raid_lvl|
+      return raid_lvl.match(/\d{1,2}/)[0].to_i
+    end
+  end
+
+  def parse_members(line)
+    members = []
+    line.scan(/[hs]d[a-z]{1,2}\d/) do |disk|
+      members << "/dev/#{disk}"
+    end
+    members
+  end
+
+  # Collect information about software RAID devices.
+  #
+  def get_dmraid_info
+    info, error = runcmd("dmraid -s -c -c -c")
+    return [] unless info && info != 'no raid disks'
+
     dm_raids = Array.new
-      info, error = runcmd("dmraid -s -c -c -c")
-      if info
-        if info != 'no raid disks'
-          info.each_line { |line|
-            line = line.split(':')
-            if !line[0].index('/')
-              raid = Hash.new
-              raid['name'] = get_dmraid_fullname(line[0])
-              raid['raid_lvl'] = raid_lvl_to_number(line[3])
-              raid['devices'] = Array.new
-              raid['size'] = get_device_size(raid['name'])
-              raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
-              dm_raids.push(raid)
-            else
-              dm_raids.last['devices'].push(line[0])
-            end
-          }
-        end
+    info.each_line do |line|
+      line = line.split(':')
+      if line[0].index('/')
+        dm_raids.last['devices'].push(line[0])
+      else
+        raid = Hash.new
+        raid['name'] = get_dmraid_fullname(line[0])
+        raid['raid_lvl'] = raid_lvl_to_number(line[3])
+        raid['devices'] = Array.new
+        raid['size'] = get_device_size(raid['name'])
+        raid['has_grub_mbr'] = find_grub_mbr(raid['name'])
+        dm_raids.push(raid)
       end
+    end
     dm_raids
   end
 
-  def get_partition_info # collect information about partition tables
-    partition_list = Array.new
-    disks = Array.new
+  # Collect information about partition tables.
+  #
+  def get_partition_info
     disks = @creatures['hdd'] + @creatures['dmraid']
-    disks.each { |hdd|
-      if hdd['type'] == nil
-        partitions = Hash.new
-        partitions['disk'] = hdd['name']
-        partitions['partitions'] = read_partitions(hdd['name'])
-        partitions['partitions'].each { |partition|
-          partition['uuid'], partition['type'], partition['label'] = get_uuid_type_label(partition['name'])
-          partition['has_grub_mbr'] = find_grub_mbr(partition['name'])
-          #partition['label'] = get_label(partition['name'])
-        }
-        partition_list.push(partitions)
+    disks.inject([]) do |partition_list, hdd|
+      next(partition_list) if hdd['type']
+      partitions = Hash.new
+      partitions['disk'] = hdd['name']
+      partitions['partitions'] = read_partitions(hdd['name'])
+      partitions['partitions'].map! do |p|
+        p['uuid'], p['type'], p['label'] = get_uuid_type_label(p['name'])
+        p['has_grub_mbr'] = find_grub_mbr(p['name'])
       end
-    }
-    partition_list
+      partition_list << partitions
+    end
   end
 
-  def get_lvm_info # collect information about LVM
+  # Collect information about LVM.
+  #
+  def get_lvm_info
     begin
-      vg_list = Array.new
       backup_dir = "/tmp/vgcfgbackup"
-      backup_files = Array.new
       Dir.mkdir(backup_dir) if !File.directory?(backup_dir)
       info, error = runcmd("vgcfgbackup -f #{backup_dir}/%s")
-      dir = Dir.open(backup_dir)
       raise "Can't collect LVM info: #{error}." if error
-      dir.each { |file|
-        if file != '.' && file !='..'
-          vg = Hash.new
-          vg['name'] = file
-          vg['lvs'] = get_vg_lvs(file)
-          backup_file = "#{backup_dir}/#{file}"
-          backup_files.push(backup_file)
-          vg['config'] = IO.read(backup_file)
-          vg_list.push(vg)
-        end
-      }
-      vg_list
+      dir = Dir.open(backup_dir)
+      backup_files, vg_list = create_vg_list(dir, backup_dir)
     ensure
       backup_files.each { |file|
         File.unlink(file) if File.exist?(file)
@@ -153,63 +145,87 @@ class Collector
     end
   end
 
-  def get_vg_lvs(vg) # find logical volumes of LVM volume group
-    lvs = Array.new
+  def create_vg_list(dir, backup_dir)
+    backup_files = []
+    dir.inject do |vg_list, file|
+      next if file == '.' || file == '..'
+      vg = Hash.new
+      vg['name'] = file
+      vg['lvs'] = get_vg_lvs(file)
+      backup_file = "#{backup_dir}/#{file}"
+      backup_files.push(backup_file)
+      vg['config'] = IO.read(backup_file)
+      vg_list << vg
+    end
+    [backup_files, vg_list]
+  end
+
+  # Find logical volumes of LVM volume group.
+  #
+  def get_vg_lvs(vg)
     info, error = runcmd("lvdisplay -c #{vg}")
-    if !error
-      info.each_line { |line|
-        line.strip!
-        lv = line.split(':')[0]
-        lvs.push(lv)
-      }
-    else
-      raise "can't find lv for vg=\"#{vg}\": #{error}."
+    raise "can't find lv for vg=\"#{vg}\": #{error}." if error
+
+    info.each_line.inject([]) do |lvs, line|
+      lvs << line.strip!.split(':').first
     end
-    lvs
   end
 
-  def get_mount_info # collect information about how to mount partitions
-    mounts = Array.new
-    IO.read('/etc/fstab').each_line { |line|
+  # Collect information about how to mount partitions.
+  #
+  def get_mount_info
+    IO.read('/etc/fstab').each_line.inject([]) do |mounts, line|
       line.chomp!.strip!
-      if !line.empty? && line.index('#') != 0
-        device = Hash.new
-        device['mount_info'] = line.split(' ')
-        device_name = device['mount_info'][0]
-        device['name'] = to_ndn(device_name)
-        mounts.push(device)
-      end
-    }
-    mounts
+      next(mounts) if line.empty? || line.index('#') == 0
+
+      device = Hash.new
+      device['mount_info'] = line.split(' ')
+      device_name = device['mount_info'].first
+      device['name'] = to_ndn(device_name)
+      mounts << device
+    end
   end
 
-  def get_boot_info # find where GRUB installed (ignore partitions)
-    bootloader = Hash.new
-    boot_folder_hdd = find_where_boot_folder
+  # Find where GRUB installed (ignore partitions).
+  #
+  def get_boot_info
+    bootloader = find_bootloader_in_hdd_and_md
+    bootloader = find_bootloader_in_partitions unless bootloader
+  end
+
+  def find_bootloader_in_hdd_and_md
     hdd_and_md = @creatures['hdd'] + @creatures['md'] + @creatures['dmraid']
-    hdd_and_md.each { |hdd|
-      if hdd['has_grub_mbr']
-        if hdd['name'] == boot_folder_hdd
-          bootloader['bootloader_on'] = hdd['name']
-          bootloader['bootloader_type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
-          bootloader['partition'] = find_boot_partition
-        end
-      end
-    }
-    if bootloader.empty?
-      @creatures['partition'].each { |hdd|
-        hdd['partitions'].each { |partition|
-          if partition['has_grub_mbr']
-            if partition['name'] == find_boot_partition
-              bootloader['bootloader_on'] = partition['name']
-              bootloader['bootloader_type'] = File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
-              bootloader['partition'] = partition['name']
-            end
-          end
-        }
-      }
+    hdd_and_md.each do |hdd|
+      next unless hdd['has_grub_mbr']
+      next unless hdd['name'] == find_where_boot_folder
+
+      bootloader = Hash.new
+      bootloader['bootloader_on'] = hdd['name']
+      bootloader['bootloader_type'] = bootloader_type
+      bootloader['partition'] = find_boot_partition
+      return bootloader
     end
-    bootloader
+    nil
+  end
+
+  def find_bootloader_in_partitions
+    @creatures['partition'].each do |hdd|
+      hdd['partitions'].each do |partition|
+        next unless partition['has_grub_mbr']
+        next unless partition['name'] == find_boot_partition
+
+        bootloader = Hash.new
+        bootloader['bootloader_on'] = partition['name']
+        bootloader['bootloader_type'] = bootloader_type
+        bootloader['partition'] = partition['name']
+        return bootloader
+      end
+    end
+    nil
+  end
+
+  def bootloader_type
+    File.exist?('/boot/grub/menu.lst') ? 'grub' : 'grub2'
   end
 
   def find_boot_partition # detect if boot partition separated from root or return nil
