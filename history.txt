@@ -1,5 +1,5 @@
 Conserve history.
-version 51 
+version 52
 
 conserve:
 	to do:
@@ -8,6 +8,9 @@ conserve:
 			3. Add backup of multiple sources to one file.
 			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 			5. Send report without creating log file. Should create array of strings that sended to @log and send this array in report.
+
+    0.3.1
+            0. Starting code cleaning by merge devel to s-mage-master. Plus some fixes.
 
 	0.3.0
 			0. Merge devel to master.

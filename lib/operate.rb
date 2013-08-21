@@ -14,7 +14,7 @@ eos
 help[:exclude] = <<-eos
 exclude devices from baremetal backup;
 \t\t\t\t\t\t\tdevice name must be at "normal device name" format. For example,
-\t\t\t\t\t\t\t"/dev/vg/lv". List of devices shoud be comma separated without spaces.'
+\t\t\t\t\t\t\t"/dev/vg/lv". List of devices shoud be comma separated without spaces.
 eos
 help[:help] = <<-eos
 "Conserve  Copyright (C) 2013  nixargh <nixargh@gmail.com>
@@ -41,7 +41,7 @@ help[:destination] = <<-eos
 full file path where to store backup;
 \t\t\t\t\t\t\ttypes: smb, nfs, rsync;
 \t\t\t\t\t\t\texisting file will be overwrited;
-\t\t\t\t\t\t\t(in development) if source is number of files than all backup files will be added to \"destination.tar\" file;
+\t\t\t\t\t\t\t(in development) if source is number of files than all backup files will be added to "destination.tar" file;
 \t\t\t\t\t\t\trsync: -d equals to -D;
 \t\t\t\t\t\t\trsync: using / at the end of source path affects destination, use man rsync to learn more.
 eos
@@ -53,23 +53,25 @@ full directory path where to store backup;
 \t\t\t\t\t\t\trsync: -d equals to -D;
 \t\t\t\t\t\t\trsync: using / at the end of source path affects destination, use man rsync to learn more.
 eos
-help[:rsync_options] = 'any rsync options that you like; Default \"-hru\" will be overrided. \"-v\" can\'t be overrided'
-help[:log_enabled] = 'full path to logfile. Show info to console by default'
-help[:lvm] = 'do [not] use LVM snapshot'
-help[:plain] = 'backup files without tar as plain tree'
-help[:mount_dir] = 'root for temporary directories used to mount network shares or LVM snapshots (\"/mnt\" by default)'
-help[:credential] = 'full path to file with smb credentials. File format as for cifs mount'
-help[:archive] = 'Archive block device image by gzip or tar and gzip files when backuping non block device'
-help[:mbr] = 'Backup MBR from device pointed like source'
+help[:rsync_options] = 'any rsync options that you like; Default "-hru" will be overrided. "-v" can\'t be overrided.'
+help[:log_enabled] = 'full path to logfile. Show info to console by default.'
+help[:lvm] = 'do [not] use LVM snapshot.'
+help[:plain] = 'backup files without tar as plain tree.'
+help[:mount_dir] = 'root for temporary directories used to mount network shares or LVM snapshots ("/mnt" by default).'
+help[:credential] = 'full path to file with smb credentials. File format as for cifs mount.'
+help[:archive] = 'Archive block device image by gzip or tar and gzip files when backuping non block device.'
+help[:mbr] = 'Backup MBR from device pointed like source.'
 help[:collect] = <<-eos
 store information about system;
-\t\t\t\t\t\t\tby default path to the file will be \"/destination_dir/fqdn.info\".
-\t\t\t\t\t\t\tif you want to save information to other file you can use it like -cl='dir'.
+\t\t\t\t\t\t\tby default path to the file will be "/destination_dir/fqdn.info".
+\t\t\t\t\t\t\tif you want to save information to other file you can use it like -c="/dir".
 eos
-help[:inform] = 'Inform about backup status as described at config file;
-If no config file found it will be created.'
-help[:job_name] = 'Set display name for backup job'
-help[:debug] = 'Show mode information about code errors'
+help[:inform] = <<-eos
+Inform about backup status as described at config file;
+\t\t\t\t\t\t\tIf no config file found it will be created.
+eos
+help[:job_name] = 'Set display name for backup job.'
+help[:debug] = 'Show mode information about code errors.'
   # Options hash.
   #
   options = Hash.new(false)
@@ -136,7 +138,7 @@ help[:debug] = 'Show mode information about code errors'
       options[:cred_file] = path
     end
 
-    params.on('--collect [PATH]', help[:collect]) do |dir|
+    params.on('-c', '--collect [PATH]', help[:collect]) do |dir|
       options[:collect] = true
       options[:collect_dir] = path
     end
@@ -161,7 +163,7 @@ help[:debug] = 'Show mode information about code errors'
     end
 
     params.on_tail('-v', '--version', 'Show version') do
-      puts "Conserve - backup tool v.#{$version} (*w)"
+      puts "Conserve - backup tool v.#{$version} (*w)."
       exit
     end
   end.parse!

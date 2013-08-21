@@ -360,7 +360,7 @@ class Collector
     info, error = runcmd("sfdisk -l #{disk} -d -x")
     error = read_partitions_error_handling if error
     raise "Error while reading partitions table of #{disk}: #{error}." if error
-    info.each_line.inject[] do |partitions, line|
+    info.each_line.inject do |partitions, line|
       partition = read_partition(line)
       partition ? partitions << partition : partitions
     end
