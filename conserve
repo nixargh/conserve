@@ -67,11 +67,10 @@ class Conserve
 
   def load_libraries! # loads additional Classses
     File.directory?("./lib") ? $LOAD_PATH.unshift("./lib") : $LOAD_PATH.unshift(@lib_dir)
-    require 'optparse'
     require 'add_functions'
     require 'lvm_operate'
     require 'backup'
-    require 'operate'
+    require 'options'
     require 'inform'
     require 'ruby_gems'
     require 'log'
@@ -211,6 +210,6 @@ begin
   conserve.run
 rescue
   puts "\t#{$!}"
-# puts $!.backtrace
+ puts $!.backtrace
   exit 1
 end

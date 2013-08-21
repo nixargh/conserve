@@ -45,13 +45,13 @@ class Log
   # Write colored text to output WITH "end of line".
   #
   def write(info = nil, color = nil, interactive = false)
-    write_with_eol(into, color, interactive)
+    write_with_eol(info, color, interactive)
   end
 
   # Writing colored text to output WITHOUT "end of line".
   #
   def write_noel(info=nil, color=nil, interactive=false)
-    write_with_eol(into, color, interactive, '')
+    write_with_eol(info, color, interactive, '')
   end
 
   private
