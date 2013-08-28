@@ -159,7 +159,7 @@ eos
 
     params.on('', '--collect [PATH]', help[:collect]) do |dir|
       options[:collect] = true
-      options[:collect_dir] = path
+      options[:collect_dir] = dir
     end
 
     params.on('-i', '--inform [PATH]', help[:inform]) do |path|

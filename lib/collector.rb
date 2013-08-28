@@ -114,17 +114,20 @@ class Collector
   #
   def get_partition_info
     disks = @creatures['hdd'] + @creatures['dmraid']
-    disks.inject([]) do |partition_list, hdd|
+    partition_list = disks.inject([]) do |partition_list, hdd|
       next(partition_list) if hdd['type']
       partitions = Hash.new
       partitions['disk'] = hdd['name']
       partitions['partitions'] = read_partitions(hdd['name'])
-      partitions['partitions'].map! do |p|
-        p['uuid'], p['type'], p['label'] = get_uuid_type_label(p['name'])
-        p['has_grub_mbr'] = find_grub_mbr(p['name'])
+      if  partitions['partitions']
+        partitions['partitions'].map! do |p|
+          p['uuid'], p['type'], p['label'] = get_uuid_type_label(p['name'])
+          p['has_grub_mbr'] = find_grub_mbr(p['name'])
+        end
       end
       partition_list << partitions
     end
+    #puts partition_list
   end
 
   # Collect information about LVM.
@@ -348,21 +351,26 @@ class Collector
   def get_uuid_type_label(device) # get uuid and type and label of block device
     uuid, type, label = nil, nil, nil
     info = `blkid #{device}`.split(' ')
-    info.map { |x| x.split('=').last.delete('"') }.each do |arg|
-      uuid = arg if arg.index('UUID')
-      type = arg if arg.index('TYPE')
-      label = arg if arg.index('LABEL')
+    info.map { |x| x.delete('"') }.each do |arg|
+      uuid = arg.split('=').last if arg.index('UUID')
+      type = arg.split('=').last if arg.index('TYPE')
+      label = arg.split('=').last if arg.index('LABEL')
     end
     return uuid, type, label
   end
 
   def read_partitions(disk) # read partitions table of disk + some of partition attributes
     info, error = runcmd("sfdisk -l #{disk} -d -x")
-    error = read_partitions_error_handling if error
+    error = read_partitions_error_handling(error) if error
     raise "Error while reading partitions table of #{disk}: #{error}." if error
-    info.each_line.inject do |partitions, line|
-      partition = read_partition(line)
-      partition ? partitions << partition : partitions
+    if info
+      info.each_line.inject([]) do |partitions, line|
+        line.chomp!
+        partition = read_partition(line)
+        partition ? partitions << partition : partitions
+      end
+    else
+      nil
     end
   end
 
@@ -371,6 +379,8 @@ class Collector
     if error.index('GPT')
       # stub. need to write alternative detection method for GPT partition table
       raise "GPT partition table detected on #{disk}. Don't know how to work with it."
+    elsif error.index("No partitions found")
+      error = nil
     elsif error == "Warning: extended partition does not start at a cylinder boundary.\nDOS and Linux will interpret the contents differently."
       # stub for that warning
       error = nil
@@ -380,14 +390,14 @@ class Collector
 
   # Parse information about partition given string with information itself.
   # Correct string looks like this:
-  # /dev/sda2 : start=   819315, size=  5253255, Id=82
+  # /dev/sda2 : start=   819315, size=  5253255, Id=82, bootable
   #
   def read_partition(line)
     return nil unless line.index('/dev/') == 0
     partition = Hash.new
     partition['name'], properties = line.split(' : ')
-    _, partition['size'], partition['id'] = properties.split(',').
-      map { |x| x.split('=').last.to_i }
+    _, partition['size'], partition['id'] = properties.split(',').map { |x| x.split('=').last }
+    partition['size'] = partition['size'].to_i
     partition['size'] > 0 ? partition : nil
   end
 

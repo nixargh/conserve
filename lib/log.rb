@@ -59,7 +59,7 @@ class Log
   # Printing to stdout with or without "end of line" character.
   #
   def to_stdout(info, eol)
-    print info + eol
+    print "#{info}#{eol}"
   end
 
   # Printing to file with or without "end of line" character.
