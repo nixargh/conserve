@@ -74,7 +74,7 @@ full directory path where to store backup;
 eos
   help[:rsync_options] = 'any rsync options that you like; Default "-hru" will be overrided. "-v" can\'t be overrided.'
   help[:log_enabled] = 'full path to logfile. Show info to console by default.'
-  help[:lvm] = 'do [not] use LVM snapshot.'
+  help[:lvm] = 'do not use LVM snapshot.'
   help[:plain] = 'backup files without tar as plain tree.'
   help[:mount_dir] = 'root for temporary directories used to mount network shares or LVM snapshots ("/mnt" by default).'
   help[:credential] = 'full path to file with smb credentials. File format as for cifs mount.'
@@ -110,20 +110,21 @@ eos
       options[:devices] = devices
     end
 
-    params.on('--[no-]lvm', help[:lvm]) do |parameter|
-      options[:use_lvm] = parameter
+    params.on('--no-lvm', help[:lvm]) do
+      options[:use_lvm] = false
     end
 
     params.on('-z', '--gzip', help[:archive]) do
       options[:archive] = true
     end
 
-    params.on('-l', '--log', help[:log_enabled]) do
+    params.on('-l', '--log [FILE]', help[:log_enabled]) do |file|
       options[:log_enabled] = true
+      options[:log_file] = file
     end
 
-    params.on('--[no-]mbr', help[:mbr]) do |parameter|
-      options[:mbr] = parameter
+    params.on('--mbr', help[:mbr]) do
+      options[:mbr] = true
     end
 
     params.on('-p', '--plain', help[:plain]) do
@@ -157,7 +158,7 @@ eos
       options[:cred_file] = path
     end
 
-    params.on('', '--collect [PATH]', help[:collect]) do |dir|
+    params.on('--collect [PATH]', help[:collect]) do |dir|
       options[:collect] = true
       options[:collect_dir] = dir
     end
@@ -172,7 +173,6 @@ eos
 
     params.on('--debug', help[:debug]) do
       options[:debug] = true
-      puts params
     end
 
     params.on_tail('-h', '--help', 'Show this message') do

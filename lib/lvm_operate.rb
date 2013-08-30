@@ -47,32 +47,24 @@ class LVM_operate
   end
 
   def create_snapshot(volume)
-    begin
-      status = 0
-      volume = convert_to_non_mapper(volume) if volume.index("mapper")
-      snapshot_name = "#{File.basename(volume)}_backup"
-      snapshot = File.dirname(volume) + "\/" + snapshot_name
-      if @snapshots_created.index(snapshot) && File.exist?(snapshot)
-        error = nil
-        @log.write_noel(' [Exist] ', 'yellow')
+    volume = convert_to_non_mapper(volume) if volume.index("mapper")
+    snapshot_name = "#{File.basename(volume)}_backup"
+    snapshot = "#{File.dirname(volume)}/#{snapshot_name}"
+    if @snapshots_created.index(snapshot) && File.exist?(snapshot)
+      @log.write_noel(' [Exist] ', 'yellow')
+    else
+      snapshot_size = find_space_for_snapshot(get_volume_group(volume))
+      snapshot_size = snapshot_size * @snapshot_size_part / 100
+      info, error = do_it("lvcreate -l#{snapshot_size} -s -n #{snapshot_name} #{volume}")
+      if error
+        raise error
       else
-        snapshot_size = find_space_for_snapshot(get_volume_group(volume))
-        snapshot_size = snapshot_size * @shapshot_size_part / 100
-        action = "lvcreate -l#{snapshot_size} -s -n #{snapshot_name} #{volume}"
-        info, error = do_it(action)
-        if error
-          raise error
-        else
-          @snapshots_created.push(snapshot)
-          msg = "Could not find snapshot: #{snapshot}. Maybe it's not created."
-          raise msg if !File.exist?(snapshot)
-        end
+        @snapshots_created.push(snapshot)
+        msg = "Could not find snapshot: #{snapshot}. Maybe it's not created."
+        raise msg if !File.exist?(snapshot)
       end
-    rescue
-      status = 1
-      error = $!
     end
-    [status, error, snapshot]
+    snapshot
   end
 
   # Delete LVM snapshot

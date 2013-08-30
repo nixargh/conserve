@@ -16,8 +16,7 @@
 # along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 
 class Log
-  attr_accessor :start_time
-  attr_reader :log_file
+  attr_accessor :start_time, :log_file
 
   def initialize()
     @log_file = nil
@@ -52,6 +51,7 @@ class Log
   #
   def write_noel(info=nil, color=nil, interactive=false)
     write_with_eol(info, color, interactive, '')
+    @skip_time = true
   end
 
   private

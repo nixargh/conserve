@@ -38,6 +38,7 @@ class Conserve
     begin
       load_libraries!
       parse_arguments!
+      puts @params if @params[:debug]
       start_logging!
       @log.write("Conserve started v.#{$version}.",'yellow')
       collect_sysinfo!
@@ -87,12 +88,12 @@ class Conserve
     log = Log.new
     if @params[:log_enabled]
       log.enable # start log to file instead of stdout
-      log.file = @params[:log_file]
+      log.log_file = @params[:log_file]
     end
     @log = log
     if @debug
       @log.write_noel("Logging started.", 'yellow')
-      @params[:log_enabled] ? @log.write(" Logging to file - #{log.file}.") : @log.write
+      @params[:log_enabled] ? @log.write(" Logging to file - #{log.log_file}.") : @log.write
     end
   end
 
@@ -149,8 +150,8 @@ class Conserve
 
   def start_backup!(params=@params) # runs backup job
     @log.write("Backup started.", 'yellow') if @debug
-    raise "You have to specify source and destination for backup." if !params['source'] || !params['destination']
-    backup = Backup.new(params['source'], params['destination'], params['dest_target_type'])
+    raise "You have to specify source and destination for backup." if !params[:source] || !params[:destination]
+    backup = Backup.new(params[:source], params[:destination], params[:dest_target_type])
     backup.log = @log
     backup.mbr = true if params[:mbr]
     backup.job_name = params[:job_name]

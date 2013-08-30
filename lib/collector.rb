@@ -114,20 +114,19 @@ class Collector
   #
   def get_partition_info
     disks = @creatures['hdd'] + @creatures['dmraid']
-    partition_list = disks.inject([]) do |partition_list, hdd|
+    disks.inject([]) do |partition_list, hdd|
       next(partition_list) if hdd['type']
       partitions = Hash.new
       partitions['disk'] = hdd['name']
       partitions['partitions'] = read_partitions(hdd['name'])
       if  partitions['partitions']
-        partitions['partitions'].map! do |p|
+        partitions['partitions'].map do |p|
           p['uuid'], p['type'], p['label'] = get_uuid_type_label(p['name'])
           p['has_grub_mbr'] = find_grub_mbr(p['name'])
         end
       end
       partition_list << partitions
     end
-    #puts partition_list
   end
 
   # Collect information about LVM.
@@ -137,30 +136,30 @@ class Collector
       backup_dir = "/tmp/vgcfgbackup"
       Dir.mkdir(backup_dir) if !File.directory?(backup_dir)
       info, error = runcmd("vgcfgbackup -f #{backup_dir}/%s")
-      raise "Can't collect LVM info: #{error}." if error
+      raise error if error
       dir = Dir.open(backup_dir)
-      backup_files, vg_list = create_vg_list(dir, backup_dir)
+      create_vg_list(dir, backup_dir)
+    rescue 
+      raise "Can't collect LVM info: #{$!}."
     ensure
-      backup_files.each { |file|
-        File.unlink(file) if File.exist?(file)
-      }
+      Dir.entries(backup_dir).each do |file|
+        File.unlink("#{backup_dir}/#{file}") if file != '.' && file != '..'
+      end
       Dir.unlink(backup_dir) if File.directory?(backup_dir)
     end
   end
 
   def create_vg_list(dir, backup_dir)
-    backup_files = []
-    dir.inject do |vg_list, file|
-      next if file == '.' || file == '..'
+    backup_files = Array.new
+    dir.inject([]) do |vg_list, file|
+      next(vg_list) if file == '.' || file == '..'
       vg = Hash.new
       vg['name'] = file
       vg['lvs'] = get_vg_lvs(file)
       backup_file = "#{backup_dir}/#{file}"
-      backup_files.push(backup_file)
       vg['config'] = IO.read(backup_file)
       vg_list << vg
     end
-    [backup_files, vg_list]
   end
 
   # Find logical volumes of LVM volume group.
@@ -194,6 +193,7 @@ class Collector
   def get_boot_info
     bootloader = find_bootloader_in_hdd_and_md
     bootloader = find_bootloader_in_partitions unless bootloader
+    bootloader
   end
 
   def find_bootloader_in_hdd_and_md
@@ -290,14 +290,14 @@ class Collector
     find_by_attribute('label', label)
   end
 
-  # Find device by its' attributes' name and type.
+  # Find device by its' attributes' type and value.
   #
-  def find_by_attribute(type, attribute)
-    name = find_attribute(@creatures['hdd'], type, attribute)
-    name = find_attribute(@creatures['md'], type, attribute) unless name
+  def find_by_attribute(type, value)
+    name = find_attribute(@creatures['hdd'], type, value)
+    name = find_attribute(@creatures['md'], type, value) unless name
     @creatures['partition'].each do |hdd|
       return name if name
-      name = find_attribute(hdd['partitions'], type, attribute)
+      name = find_attribute(hdd['partitions'], type, value)
     end
     name
   end
@@ -306,16 +306,18 @@ class Collector
   # Params:
   #   @array - array of hashes, each hash has field 'name';
   #   @type - type of attribute, each hash also has this field;
-  #   @name - name of attribute.
+  #   @value - value of attribute.
   #
-  def find_attribute(array, type, name)
+  def find_attribute(array, type, value)
     array.each do |hash|
-      return hash['name'] if name == hash[type]
+      return hash['name'] if value == hash[type]
     end
     nil
   end
 
-  def find_grub_mbr(device) # detect if there is GRUB's info at hdd mbr
+  # detect if there is GRUB's info at hdd mbr
+  #
+  def find_grub_mbr(device) 
     info, error = runcmd("dd bs=512 count=1 if=#{device} 2>/dev/null")
     if info
       info.index('GRUB') ? true : false
@@ -359,7 +361,7 @@ class Collector
     return uuid, type, label
   end
 
-  def read_partitions(disk) # read partitions table of disk + some of partition attributes
+  def read_partitions(disk) # read partitions table of disk + some of partition attribute
     info, error = runcmd("sfdisk -l #{disk} -d -x")
     error = read_partitions_error_handling(error) if error
     raise "Error while reading partitions table of #{disk}: #{error}." if error

@@ -370,19 +370,20 @@ class Backup
     end
   end
 
-  def do_snapshot(lvm_lv) # do snapshot of LVM Logical Volume
-    lvm_lv_snapshot = nil
-    @log.write("\t\t\tUsing LVM (by default):", 'yellow')
-    @log.write_noel("\t\t\t\tCreating snapshot of #{lvm_lv} - ") 
-    create_snapshot_result = @lvm.create_snapshot(lvm_lv)
-    if create_snapshot_result[0] == 0
+  # do snapshot of LVM Logical Volume
+  #
+  def do_snapshot(lvm_lv)
+    begin
+      lvm_lv_snapshot = nil
+      @log.write("\t\t\tUsing LVM (by default):", 'yellow')
+      @log.write_noel("\t\t\t\tCreating snapshot of #{lvm_lv} - ") 
+      lvm_lv_snapshot = @lvm.create_snapshot(lvm_lv)
       @log.write('[OK]', 'green')
-      lvm_lv_snapshot = create_snapshot_result[2]
-    else
+      lvm_lv_snapshot
+    rescue
       @log.write('[FAILED]', 'red')
-      raise "Snapshot creation failed with: #{create_snapshot_result[1]}"
+      raise "Snapshot creation failed with: #{$!}"
     end
-    lvm_lv_snapshot
   end
   
   def get_device_size(device) # get size of block device

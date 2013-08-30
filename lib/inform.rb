@@ -219,8 +219,8 @@ class Inform
         delivery_method :smtp, options
       end
       
-      if @log.file
-        log = File.read(@log.file)
+      if @log.log_file
+        log = File.read(@log.log_file)
       else
         raise "Can't read log file, because it's not specified."
       end
