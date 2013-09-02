@@ -411,10 +411,10 @@ class Collector
 
   def raid_lvl_to_number(raid_lvl_string) # convert string raid level to raid level number
     case raid_lvl_string
-    when 'stripe' then 0
-    when 'mirror' then 1
-    when 'stripe on top of mirrors' then 10
-    when 'mirror on top of stripes' then 01 # here's a bug, 01 == 1.
+    when 'stripe' then '0'
+    when 'mirror' then '1'
+    when 'stripe on top of mirrors' then '10'
+    when 'mirror on top of stripes' then '01'
     else raise "Unknown software raid type: \"#{raid_lvl_string}\"."
     end
   end

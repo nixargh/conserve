@@ -95,6 +95,7 @@ eos
   #
   options = Hash.new(false)
   options[:use_lvm] = true
+  options[:job_name] = "Backup"
 
   # Parse options.
   #

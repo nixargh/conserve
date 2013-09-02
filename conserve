@@ -48,12 +48,14 @@ class Conserve
         start_lvm! if @params[:use_lvm]
         start_backup!
       end
+      return true
     rescue
       if @log
         @error = $!
         @log.write_noel("Conserve#run error: ", 'red')
         @log.write(@error, 'yellow')
         @log.write(@error.backtrace, 'sky_blue') if @debug
+        return false
       else
         raise $!
       end
@@ -207,10 +209,15 @@ end
 #### FUNCTIONS #################################################################
 #### PROGRAM ###################################################################
 begin
+  exit_code = 0
   conserve = Conserve.new
-  conserve.run
+  if conserve.run
+    exit 0
+  else
+    exit 1
+  end
 rescue
   puts "\t#{$!}"
- puts $!.backtrace
+  #puts $!.backtrace
   exit 1
 end

@@ -115,12 +115,12 @@ class LVM_operate
       info, error = runcmd(action)
       return [info, nil] unless error
 
-      case error.index
-      when 'give up on open_count'
+      case 
+      when error.index('give up on open_count')
         # this is to avoid SLES 11 sp.1 bug with "Unable to deact, open_count is 1" warning
         @log.write("\t\t\tBuged lvremove detected. Warnings on snapshot remove.", 'yellow')
         error = nil
-      when 'Found duplicate PV'
+      when error.index('Found duplicate PV')
         # this is to avoid duplication of block device with SLES11 on Hyper-V
         @log.write("\t\t\t\"duplicate PV\" SLES11 on Hyper-V problem detected. Continue backup process.", 'yellow') if !@duplicate_warning
         error = nil

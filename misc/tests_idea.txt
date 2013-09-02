@@ -7,7 +7,7 @@ Intergation Tests:
 			a. device
 			b. file
 		3. source
-			a. phsical device
+			a. physical device
 			b. partition
 			c. lvm logical volume
 			d. dmraid device
