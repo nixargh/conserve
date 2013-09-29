@@ -2,6 +2,7 @@
 @src_dev_lvm = /dev/data/test
 @src_dir = /etc
 @src_files1 = /etc/fstab,/etc/default
+@src_files2 = /etc/init.d/*
 @src_boot_dev = /dev/sda
 @dst_dir_loc = /data/documents/backup/elephant/test
 @dst_file_loc = /data/documents/backup/elephant/test/backup_file
@@ -13,33 +14,62 @@
 @dst_file_smb = smb://192.168.196.19/smb/elephant/etc
 #
 # Tests
-[help                                           ] -h
-[version                                        ] -v
+[help                                                   ] -h
+[version                                                ] -v
 # MBR
-[MBR to local directory                         ] -s @src_boot_dev --mbr -D @dst_dir_loc
-[MBR to local file                              ] -s @src_boot_dev --mbr -d @dst_file_loc
+[MBR to local directory                                 ] -s @src_boot_dev --mbr -D @dst_dir_loc
+[MBR to local file                                      ] -s @src_boot_dev --mbr -d @dst_file_loc
 # LV
-[LVM lv to local directory                      ] -s @src_dev_lvm -D @dst_dir_loc
-[LVM lv to local file                           ] -s @src_dev_lvm -d @dst_file_loc
-[LVM lv to local directory archived             ] -s @src_dev_lvm -D @dst_dir_loc -z
-[LVM lv to local file archived                  ] -s @src_dev_lvm -d @dst_file_loc -z
+# -archive
+[LVM lv to local directory                              ] -s @src_dev_lvm -D @dst_dir_loc
+[LVM lv to local file                                   ] -s @src_dev_lvm -d @dst_file_loc
+# +archive
+[LVM lv to local directory archived                     ] -s @src_dev_lvm -D @dst_dir_loc -z
+[LVM lv to local file archived                          ] -s @src_dev_lvm -d @dst_file_loc -z
 # Files
-[Directory to local file with LVM               ] -s @src_dir -d @dst_file_loc
-[Files to local directory with LVM              ] -s @src_files1 -D @dst_dir_loc
-[Directory to local file with LVM archived      ] -s @src_dir -d @dst_file_loc -z
-[Files to local directory with LVM archived     ] -s @src_files1 -D @dst_dir_loc -z
-[Directory to local file without LVM            ] -s @src_dir -d @dst_file_loc --no-lvm
-[Files to local directory without LVM           ] -s @src_files1 -D @dst_dir_loc --no-lvm
-[Directory to local file without LVM archived   ] -s @src_dir -d @dst_file_loc -z --no-lvm
-[Files to local directory without LVM archived  ] -s @src_files1 -D @dst_dir_loc -z --no-lvm
+# +LVM
+[Directory to local file with LVM                       ] -s @src_dir -d @dst_file_loc
+[Directory to local directory with LVM                  ] -s @src_dir -D @dst_dir_loc
+#[Files to local file with LVM                          ] -s @src_files1 -d @dst_file_loc
+[Files to local directory with LVM                      ] -s @src_files1 -D @dst_dir_loc
+[Files * to local directory with LVM                    ] -s @src_files2 -D @dst_dir_loc
+# +LVM +archive
+[Directory to local file with LVM archived              ] -s @src_dir -d @dst_file_loc -z
+[Directory to local directory with LVM archived         ] -s @src_dir -D @dst_dir_loc -z
+#[Files to local file with LVM archived                 ] -s @src_files1 -d @dst_file_loc -z
+[Files to local directory with LVM archived             ] -s @src_files1 -D @dst_dir_loc -z
+[Files * to local directory with LVM archived           ] -s @src_files2 -D @dst_dir_loc -z
+# +LVM +plain
+[Directory to local file with LVM plain                 ] -s @src_dir -d @dst_file_loc -p
+[Directory to local directory with LVM plain            ] -s @src_dir -D @dst_dir_loc -p
+#[Files to local file with LVM plain                    ] -s @src_files1 -d @dst_file_loc -p
+[Files to local directory with LVM plain                ] -s @src_files1 -D @dst_dir_loc -p
+[Files * to local directory with LVM plain              ] -s @src_files2 -D @dst_dir_loc -p
+# -LVM
+[Directory to local file without LVM                    ] -s @src_dir -d @dst_file_loc --no-lvm
+[Directory to local directory without LVM               ] -s @src_dir -D @dst_dir_loc --no-lvm
+#[Files to local file without LVM                       ] -s @src_files1 -d @dst_file_loc --no-lvm
+[Files to local directory without LVM                   ] -s @src_files1 -D @dst_dir_loc --no-lvm
+[Files * to local directory without LVM                 ] -s @src_files2 -D @dst_dir_loc --no-lvm
+# -LVM +archive
+[Directory to local file without LVM archived           ] -s @src_dir -d @dst_file_loc -z --no-lvm
+[Directory to local directory without LVM archived      ] -s @src_dir -D @dst_dir_loc -z --no-lvm
+#[Files to local file without LVM archived              ] -s @src_files1 -d @dst_file_loc -z --no-lvm
+[Files to local directory without LVM archived          ] -s @src_files1 -D @dst_dir_loc -z --no-lvm
+[Files * to local directory without LVM archived        ] -s @src_files2 -D @dst_dir_loc -z --no-lvm
+# -LVM +plain
+[Directory to local file without LVM plain              ] -s @src_dir -d @dst_file_loc -p --no-lvm
+[Directory to local directory without LVM plain         ] -s @src_dir -D @dst_dir_loc -p --no-lvm
+#[Files to local file without LVM plain                 ] -s @src_files1 -d @dst_file_loc -p --no-lvm
+[Files to local directory without LVM plain             ] -s @src_files1 -D @dst_dir_loc -p --no-lvm
 # Baremetal
-#[Baremetal to local directory                  ] -b -D @dst_dir_loc
-[Baremetal with exclude to local directory      ] -b -D @dst_dir_loc -e @excl_dev1
+#[Baremetal to local directory                          ] -b -D @dst_dir_loc
+#[Baremetal with exclude to local directory              ] -b -D @dst_dir_loc -e @excl_dev1
 # NFS
-#[Baremetal to NFS directory                    ] -b -D @dst_dir_nfs
-#[Directory to NFS file with LVM                ] -s @src_dir -d @dst_file_nfs
-#[Files to NFS directory with LVM               ] -s @src_files1 -D @dst_dir_nfs
+#[Baremetal to NFS directory                            ] -b -D @dst_dir_nfs
+#[Directory to NFS file with LVM                        ] -s @src_dir -d @dst_file_nfs
+#[Files to NFS directory with LVM                       ] -s @src_files1 -D @dst_dir_nfs
 # SMB(CIFS)
-#[Baremetal to SMB directory                    ] -b -D @dst_dir_smb
-#[Directory to SMB file with LVM                ] -s @src_dir -d @dst_file_smb
-#[Files to SMB directory with LVM               ] -s @src_files1 -D @dst_dir_nfs
+#[Baremetal to SMB directory                            ] -b -D @dst_dir_smb
+#[Directory to SMB file with LVM                        ] -s @src_dir -d @dst_file_smb
+#[Files to SMB directory with LVM                       ] -s @src_files1 -D @dst_dir_nfs

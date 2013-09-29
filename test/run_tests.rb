@@ -6,12 +6,15 @@ $version = '0.1'
 ################################################################################
 
 class Test
+  require 'benchmark'
+
   def initialize
     @binary = './conserve'
     log = '-l /var/log/conserve_test.log'
     report = '-i /etc/conserve/test.inform.conf'
     @tail = "#{log} #{report}"
     @tests_config = ARGV[0]
+    @last_failed_file = "#{File.dirname(@tests_config)}/last_failed_tests"
   end
 
   # Runs tests
@@ -24,15 +27,18 @@ class Test
       tests_num += 1
       test_name, test_argv = test.split(']')
       print "#{test_name.delete('[')} - "
-      if run_cmd(test_argv)
-        puts "[ #{green('PASSED')} ]"
+      status = false
+      run_time = Benchmark.measure { status = run_cmd(test_argv) }
+      if status
+        puts "[ #{green('PASSED')} ]\t\t#{run_time}"
         next(failed_tests)
       else
-        puts "[ #{red('FAILED')} ]"
+        puts "[ #{red('FAILED')} ]\t\t#{run_time}"
         failed_tests << test
       end
     end
     puts "\nTests Failed: #{failed_tests.length} from #{tests_num}."
+    save_failed(failed_tests)
   end
 
   private
@@ -75,6 +81,14 @@ class Test
     end
   end
 
+  # Save failed tests list to file
+  #
+  def save_failed(failed_tests)
+    File.open(@last_failed_file, 'w+') do |file|
+      failed_tests.each { |test| file.write(test) }
+    end
+  end
+
   # Compile conserve command line
   #
   def run_cmd(test)
@@ -95,5 +109,12 @@ class Test
 end
 
 ################################################################################
-test = Test.new
-test.run
+begin
+  test = Test.new
+  test.run
+  exit 0
+rescue
+  puts $!
+  puts $!.backtrace
+  exit 1
+end

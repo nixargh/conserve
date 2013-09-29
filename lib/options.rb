@@ -108,7 +108,7 @@ eos
 
     params.on('-e', '--exclude device_1,device_2,device_n', Array,
       help[:exclude]) do |devices|
-      options[:devices] = devices
+      options[:exclude] = devices
     end
 
     params.on('--no-lvm', help[:lvm]) do
@@ -132,7 +132,7 @@ eos
       options[:plain_files_tree] = true
     end
 
-    params.on('-s', '--source [SOURCE]', help[:source]) do |source|
+    params.on('-s', '--source [SOURCE1] [SOURCE2]', Array, help[:source]) do |source|
       options[:source] = source
     end
 
@@ -188,5 +188,6 @@ eos
     end
   end.parse!
 
+puts 
   return options
 end

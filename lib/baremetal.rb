@@ -35,12 +35,12 @@ class Baremetal
 
   def compile_mbr_backup! # creates job to backup Master Boot Record of device with bootloader
     job = Hash.new
-    job['job_name'] = "MBR backup"
-    job['source'] = @sysinfo['boot']['bootloader_on']
-    job['destination'] = "#{@destination}/mbr"
-    job['dest_target_type'] = 'file'
-    job['mbr'] = true
-    job['archive'] = false 
+    job[:job_name] = "MBR backup"
+    job[:source] = @sysinfo['boot']['bootloader_on']
+    job[:destination] = "#{@destination}/mbr"
+    job[:dest_target_type] = 'file'
+    job[:mbr] = true
+    job[:archive] = false 
     @jobs.push(job)
   end
 
@@ -48,11 +48,11 @@ class Baremetal
     boot_partition = @sysinfo['boot']['partition']
       if boot_partition
         job = Hash.new
-        job['job_name'] = "BOOT backup"
-        job['source'] = boot_partition
-        #job['destination'] = "#{@destination}/boot_#{File.basename(boot_partition)}"
-        job['use_lvm'] = false
-        job['archive'] = true
+        job[:job_name] = "BOOT backup"
+        job[:source] = boot_partition
+        #job[:destination] = "#{@destination}/boot_#{File.basename(boot_partition)}"
+        job[:use_lvm] = false
+        job[:archive] = true
         @jobs.push(job)
       end
   end
@@ -62,9 +62,9 @@ class Baremetal
       vg['lvs'].each{|lv|
         if @partitions_to_mount.index(lv)
           job = Hash.new
-          job['job_name'] = "#{lv} backup"
-          job['source'] = lv
-          job['archive'] = true
+          job[:job_name] = "#{lv} backup"
+          job[:source] = lv
+          job[:archive] = true
           @jobs.push(job)
         end
       }
@@ -75,10 +75,10 @@ class Baremetal
     @partitions_to_mount.each{|partition|
       if partition =~ /\/dev\/[shm]d[a-z]*[0-9]+/ && partition != @sysinfo['boot']['partition']
         job = Hash.new
-        job['job_name'] = "#{partition} backup"
-        job['source'] = partition
-        job['use_lvm'] = false
-        job['archive'] = true
+        job[:job_name] = "#{partition} backup"
+        job[:source] = partition
+        job[:use_lvm] = false
+        job[:archive] = true
         @jobs.push(job)
       end
     }
@@ -90,7 +90,7 @@ class Baremetal
       dest = device['mount_info'][1]
       type = device['mount_info'][2]
       device = device['name']
-      if device.index('/dev/') && type != 'swap' && !dest.index('tmp')
+      if device.index(/dev/) && type != 'swap' && !dest.index('tmp')
         to_mount.push(device)
       end
     }
@@ -100,9 +100,8 @@ class Baremetal
   def exclude! # delete jobs for excluded devices
     exclude_jobs = Array.new
     @jobs.each{|job|
-      excludes = @exclude.split(',')
-      excludes.each{|exclude|
-        exclude_jobs.push(job) if job['source'] == exclude
+      @exclude.each{|exclude|
+        exclude_jobs.push(job) if job[:source] == exclude
       }
     }
     exclude_jobs.each{|job|
