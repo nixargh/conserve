@@ -3,6 +3,7 @@ version 52
 
 conserve:
 	to do:
+            1. [BUG] Source with '*' can only be set with quotes: -s "/bin/*"
 			1. ??? [BUG] SLES11: Wrong label at collected info.
 			2. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
 			3. Add backup of multiple sources to one file.

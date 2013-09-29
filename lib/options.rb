@@ -54,7 +54,7 @@ eos
   help[:source] = <<eos
 full path to block device, file or directory to backup;
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
-\t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources.
+\t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. WARNING - BUG: use it only inside quotes.
 eos
   help[:destination] = <<-eos
 full file path where to store backup;

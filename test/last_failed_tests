@@ -1,1 +1,3 @@
-[Directory to local file with LVM plain                 ] -s /etc -d /data/documents/backup/elephant/test/backup_file -p[Directory to local directory with LVM plain            ] -s /etc -D /data/documents/backup/elephant/test -p[Directory to local file without LVM plain              ] -s /etc -d /data/documents/backup/elephant/test/backup_file -p --no-lvm[Directory to local directory without LVM plain         ] -s /etc -D /data/documents/backup/elephant/test -p --no-lvm
+[Directory to local file with LVM plain                 ] -s /etc -d /data/documents/backup/elephant/test/backup_file -p
+[Directory to local file without LVM plain              ] -s /etc -d /data/documents/backup/elephant/test/backup_file -p --no-lvm
+[Directory to local directory without LVM plain         ] -s /etc -D /data/documents/backup/elephant/test -p --no-lvm

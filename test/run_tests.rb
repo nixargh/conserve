@@ -8,12 +8,12 @@ $version = '0.1'
 class Test
   require 'benchmark'
 
-  def initialize
+  def initialize(file)
     @binary = './conserve'
     log = '-l /var/log/conserve_test.log'
     report = '-i /etc/conserve/test.inform.conf'
     @tail = "#{log} #{report}"
-    @tests_config = ARGV[0]
+    @tests_config = file
     @last_failed_file = "#{File.dirname(@tests_config)}/last_failed_tests"
   end
 
@@ -85,7 +85,7 @@ class Test
   #
   def save_failed(failed_tests)
     File.open(@last_failed_file, 'w+') do |file|
-      failed_tests.each { |test| file.write(test) }
+      failed_tests.each { |test| file.puts(test) }
     end
   end
 
@@ -110,9 +110,14 @@ end
 
 ################################################################################
 begin
-  test = Test.new
-  test.run
-  exit 0
+  if (file = ARGV[0])
+    test = Test.new(file)
+    test.run
+    exit 0
+  else
+    puts "You should specify config file."
+    exit 1
+  end
 rescue
   puts $!
   puts $!.backtrace

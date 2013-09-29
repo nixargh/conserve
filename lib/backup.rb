@@ -171,7 +171,7 @@ class Backup
 
   def prepaire_source(source) # return array of sources path
     source_files = Array.new
-    source.split(',').each{|source|
+    source.each{|source|
       source.strip!
       if source
         if source[-1, 1] == '*'
