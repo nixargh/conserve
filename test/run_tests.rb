@@ -26,7 +26,11 @@ class Test
     failed_tests = tests.each.inject([]) do |failed_tests, test|
       tests_num += 1
       test_name, test_argv = test.split(']')
-      print "#{test_name.delete('[')} - "
+      test_name.delete!('[')
+      print "#{test_name} - "
+      test_name.strip!
+      test_argv.gsub!('@name', test_name.gsub(' ', '_'))
+      test_argv = test_argv + " -n \"#{test_name}\""
       status = false
       run_time = Benchmark.measure { status = run_cmd(test_argv) }
       if status

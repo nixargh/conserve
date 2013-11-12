@@ -2,10 +2,10 @@
 @src_dev_lvm = /dev/data/test
 @src_dir = /etc
 @src_files1 = /etc/fstab,/etc/default
-@src_files2 = /etc/init.d/*
+@src_files2 = "/etc/init.d/*"
 @src_boot_dev = /dev/sda
-@dst_dir_loc = /data/documents/backup/elephant/test
-@dst_file_loc = /data/documents/backup/elephant/test/backup_file
+@dst_dir_loc = /data/documents/backup/elephant/test/backup_dir_@name
+@dst_file_loc = /data/documents/backup/elephant/test/backup_file_@name
 @excl_dev1 = /dev/data/data,/dev/nonraid_data/nonraid_data
 @excl_dev2 = 
 @dst_dir_nfs = nfs://192.168.196.19/data/nfs/elephant
