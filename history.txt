@@ -12,7 +12,7 @@ conserve:
 
     0.3.1
             0. Starting code cleaning by merge devel to s-mage-master. Plus some fixes.
-            1. Test engine written. It can't check if backups are good, but it test that conserve job ended successfuly. INFO: Cifs, NFS and rsync tests not tested yet.
+            1. Test engine is written. It can't check if backups are good, but it test that conserve job ended successfuly. INFO: Cifs, NFS and rsync tests not tested yet.
 
 	0.3.0
 			0. Merge devel to master.

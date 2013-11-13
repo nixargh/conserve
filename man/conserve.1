@@ -1,0 +1,27 @@
+.TH conserve 1 "November 14, 2013" "version 0.1" "USER COMMANDS"
+.SH NAME
+Conserve - is a linux backup utility.
+.SH SYNOPSIS
+.B conserve
+[OPTIONS]... -s SOURCE -d DEST
+.SH DESCRIPTION
+Conserve is designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files and non-LVM partitions too. It is writed on ruby.
+
+Conserve can do:
+.TP
+1. Backup block devices with LVM snapshots and dd.
+.TP
+2. Backup MBR.
+.TP
+3. Backup files from LVM snapshot or from "live" fs.
+.TP
+4. Backup files using rsync.
+.TP
+5. Backup to SMB(CIFS) or NFS share.
+.TP
+6. Collect information useful on restore.
+.TP
+7. Find out what to backup for bare metal restore.
+.TP
+8. Send report by email.
+.PP
