@@ -85,9 +85,9 @@ class Backup
             @log.write("\t\t\tFound block device \"#{device}\" for source file(s): #{source_file}.")
             device = do_snapshot(device)
             new_mount_point = mount(device, 'local')
-            if (new_source_file = find_symlink(source_file))
-              source_file = new_source_file
-            end
+#            if (new_source_file = find_symlink(source_file))
+#              source_file = new_source_file
+#            end
             if mount_point == '/'
               source_file = "#{new_mount_point}#{source_file}"
             else
@@ -97,7 +97,7 @@ class Backup
           if @rsync
             rsync_copy!(source_file, destination_file)
           elsif @plain
-            create_file_copy!(source_file, destination_file)
+            file_copy!(source_file, destination_file)
           else
             create_tar!(source_file, destination_file)
           end
@@ -581,11 +581,16 @@ class Backup
     end
   end
 
-  def create_file_copy!(source_file, destination_file) # copy file from to
+  # copy file or directory from to
+  #
+  def file_copy!(source_file, destination_file)
     @log.write_noel("\t\t\tRunning copy of #{source_file} to #{destination_file} - ")
     begin
-      FileUtils.copy_entry(source_file, destination_file) 
-      #  "remove_destination = true" and "preserve = true" failed when copying symlink
+      if File.directory?(source_file)
+        FileUtils.copy_entry(source_file, destination_file)
+      else
+        FileUtils.cp(source_file, destination_file)
+      end
 
   # It's coreutils variation of the same copy
   #    info, error = runcmd("cp -rf #{source_file} #{destination_file}")

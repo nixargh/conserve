@@ -1,9 +1,9 @@
 Conserve history.
-version 52
+version 53
 
 conserve:
 	to do:
-            1. [BUG] Source with '*' can only be set with quotes: -s "/bin/*"
+            1. [BUG] Source with '*' can only be set with quotes: -s "/bin/*". Thats because i don't know how to do it at 'optparse'. 
 			1. ??? [BUG] SLES11: Wrong label at collected info.
 			2. Remove duplication of remote destination mounts when do backup of multiple sources or baremetal.
 			3. Add backup of multiple sources to one file.
@@ -12,6 +12,7 @@ conserve:
 
     0.3.1
             0. Starting code cleaning by merge devel to s-mage-master. Plus some fixes.
+            1. Test engine written. It can't check if backups are good, but it test that conserve job ended successfuly. INFO: Cifs, NFS and rsync tests not tested yet.
 
 	0.3.0
 			0. Merge devel to master.

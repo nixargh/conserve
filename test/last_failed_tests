@@ -1,3 +1,0 @@
-[Files * to local directory with LVM                    ] -s "/etc/init.d/*" -D /data/documents/backup/elephant/test/backup_dir_@name
-[Files * to local directory with LVM archived           ] -s "/etc/init.d/*" -D /data/documents/backup/elephant/test/backup_dir_@name -z
-[Files * to local directory with LVM plain              ] -s "/etc/init.d/*" -D /data/documents/backup/elephant/test/backup_dir_@name -p
