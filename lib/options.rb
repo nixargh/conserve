@@ -28,7 +28,7 @@ def parse_options
 detect what to backup automatically;
 \t\t\t\t\t\t\tbackups only devices from fstab;
 \t\t\t\t\t\t\tyou have to point destination folder to store backup files;
-\t\t\t\t\t\t\t-- collect user automatically.
+\t\t\t\t\t\t\toption --collect used automatically.
 eos
   help[:exclude] = <<-eos
 exclude devices from baremetal backup;
@@ -73,7 +73,7 @@ full directory path where to store backup;
 \t\t\t\t\t\t\trsync: using / at the end of source path affects destination, use man rsync to learn more.
 eos
   help[:rsync_options] = 'any rsync options that you like; Default "-hru" will be overrided. "-v" can\'t be overrided.'
-  help[:log_enabled] = 'full path to logfile. Show info to console by default.'
+  help[:log_enabled] = 'full path to logfile. Redirects conserve output to a file.'
   help[:lvm] = 'do not use LVM snapshot.'
   help[:plain] = 'backup files without tar as plain tree.'
   help[:mount_dir] = 'root for temporary directories used to mount network shares or LVM snapshots ("/mnt" by default).'

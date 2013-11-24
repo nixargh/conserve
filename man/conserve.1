@@ -4,8 +4,11 @@ Conserve - is a linux backup utility.
 .SH SYNOPSIS
 .B conserve
 [OPTIONS]... -s SOURCE -d DEST
+.br
+.B conserve
+[OPTIONS]... -b -D DEST
 .SH DESCRIPTION
-Conserve is designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files and non-LVM partitions too. It is writed on ruby.
+Conserve is designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files and non-LVM partitions too. It is written on ruby.
 
 Conserve can do:
 .TP
@@ -24,4 +27,45 @@ Conserve can do:
 7. Find out what to backup for bare metal restore.
 .TP
 8. Send report by email.
-.PP
+.SH OPTIONS
+.TP
+\fB\-b\fR, \fB\-\-baremetal\fR
+detect what to backup automatically;
+backups only devices from fstab;
+you have to point destination folder to store backup files;
+option --collect used automatically.
+.TP
+\fB\-e\fR, \fB\-\-exclude\fR \fBdevice_1,device_2,device_n\fR
+exclude devices from baremetal backup;
+device name must be at "normal device name" format. For example,
+"/dev/vg/lv". List of devices shoud be comma separated without spaces.
+.TP
+\fB\-\-no-lvm\fR
+do not use LVM snapshot.
+.TP
+\fB\-z\fR, \fB\-\-gzip\fR
+Archive block device image by gzip or tar and gzip files when backuping non block device.
+.TP
+\fB\-l\fR, \fB\-\-log\fR \fBfile\fR
+full path to logfile. Redirects conserve output to a file.
+.TP
+\fB\-\-mbr\fR
+Backup MBR from device pointed like source.
+.TP
+\fB\-p\fR, \fB\-\-plain\fR
+backup files without tar as plain tree.
+.TP
+\fB\-s\fR, \fB\-\-source\fR \fBsource1[,source2,*]\fR
+full path to block device, file or directory to backup;
+/dir/file, /dir, /dev/blockdev - you can specify multiple sources as comma-separated list;
+\'/dir/*\' can be used to backup all directory entries as individual sources. WARNING - BUG: use it only inside quotes.
+.TP
+\fB\-z\fR, \fB\-\-gzip\fR
+.TP
+\fB\-z\fR, \fB\-\-gzip\fR
+.TP
+\fB\-z\fR, \fB\-\-gzip\fR
+.TP
+\fB\-z\fR, \fB\-\-gzip\fR
+.TP
+\fB\-z\fR, \fB\-\-gzip\fR

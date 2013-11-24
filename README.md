@@ -4,7 +4,7 @@ conserve
 <b>Conserve</b> - is a linux backup utility.<br>
 <br>
 Conserve is designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files and non-LVM partitions too.
-It is writed on ruby.<br>
+It is written on ruby.<br>
 <br>
 Conserve can do:<br>
 <li>
@@ -17,5 +17,7 @@ Conserve can do:<br>
         <ul>7. Find out what to backup for bare metal restore.</ul>
         <ul>8. Send report by email.</ul>
 </li>
+<br>
+<href a="" target=_blank >man page</href>
 <br>
 More information can be found here - http://conserve.magic-beans.org/about
