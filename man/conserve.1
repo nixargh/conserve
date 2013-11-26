@@ -8,7 +8,7 @@ Conserve - is a linux backup utility.
 .B conserve
 [OPTIONS]... -b -D DEST
 .SH DESCRIPTION
-Conserve is designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files and non-LVM partitions too. It is written on ruby.
+Conserve is designed to use LVM snapshots and 'dd' to create images of partitions. But it can backup files and non-LVM partitions too. It is written on Ruby.
 
 Conserve can do:
 .TP
@@ -31,13 +31,18 @@ Conserve can do:
 .TP
 \fB\-b\fR, \fB\-\-baremetal\fR
 detect what to backup automatically;
+.br
 backups only devices from fstab;
+.br
 you have to point destination folder to store backup files;
+.br
 option --collect used automatically.
 .TP
-\fB\-e\fR, \fB\-\-exclude\fR \fBdevice_1,device_2,device_n\fR
+\fB\-e\fR, \fB\-\-exclude\fR \fBDEVICE1[,DEVICE2,..,DEVICEn]\fR
 exclude devices from baremetal backup;
+.br
 device name must be at "normal device name" format. For example,
+.br
 "/dev/vg/lv". List of devices shoud be comma separated without spaces.
 .TP
 \fB\-\-no-lvm\fR
@@ -46,26 +51,80 @@ do not use LVM snapshot.
 \fB\-z\fR, \fB\-\-gzip\fR
 Archive block device image by gzip or tar and gzip files when backuping non block device.
 .TP
-\fB\-l\fR, \fB\-\-log\fR \fBfile\fR
+\fB\-l\fR, \fB\-\-log\fR \fBFILE\fR
 full path to logfile. Redirects conserve output to a file.
 .TP
 \fB\-\-mbr\fR
+.br
 Backup MBR from device pointed like source.
 .TP
 \fB\-p\fR, \fB\-\-plain\fR
 backup files without tar as plain tree.
 .TP
-\fB\-s\fR, \fB\-\-source\fR \fBsource1[,source2,*]\fR
+\fB\-s\fR, \fB\-\-source\fR \fBSOURCE1[,SOURCE2,'*']\fR
 full path to block device, file or directory to backup;
+.br
 /dir/file, /dir, /dev/blockdev - you can specify multiple sources as comma-separated list;
+.br
 \'/dir/*\' can be used to backup all directory entries as individual sources. WARNING - BUG: use it only inside quotes.
 .TP
-\fB\-z\fR, \fB\-\-gzip\fR
+\fB\-o\fR, \fB\-\-rsync_options\fR \fBOPT1[,OPT2,..,OPTn]\fR
+any rsync options that you like; Default "-hru" will be overrided. "-v" can't be overrided.
 .TP
-\fB\-z\fR, \fB\-\-gzip\fR
+\fB\-d\fR, \fB\-\-dest_file\fR \fBFILE\fR
+full file path where to store backup;
+.br
+types: smb, nfs, rsync;
+.br
+existing file will be overwrited;
+.br
+(in development) if source is number of files than all backup files will be added to "destination.tar" file;
+.br
+rsync: -d equals to -D;
+.br
+rsync: using / at the end of source path affects destination, use man rsync to learn more.
 .TP
-\fB\-z\fR, \fB\-\-gzip\fR
+\fB\-D\fR, \fB\-\-dest_dir\fR \fBDIR\fR
+full directory path where to store backup;
+.br
+types: smb, nfs, rsync;
+.br
+if target directory not found it will be created, but only one level;
+.br
+backup files names will be constructed from sources names;
+.br
+rsync: -d equals to -D;
+.br
+rsync: using / at the end of source path affects destination, use man rsync to learn more.
 .TP
-\fB\-z\fR, \fB\-\-gzip\fR
+\fB\-m\fR, \fB\-\-mount_dir\fR \fBDIR\fR
+root for temporary directories used to mount network shares or LVM snapshots ("/mnt" by default).
 .TP
-\fB\-z\fR, \fB\-\-gzip\fR
+\fB\-c\fR, \fB\-\-credential\fR \fBFILE\fR
+full path to file with smb credentials. File format as for cifs mount.
+.TP
+\fB\-\-collect\fR \fBPATH\fR
+PATH can be FILE or DIR;
+.br
+store information about system;
+.br
+by default path to the file will be "/destination_dir/fqdn.info".
+.br
+if you want to save information to other file you can use it like --collect "/dir".
+.TP
+\fB\-i\fR, \fB\-\-inform\fR \rBFILE\fR
+Inform about backup status as described at config file;
+.br
+If no config file found it will be created.
+.TP
+\fB\-n\fR, \fB\-\-job_name\fR \fBNAME\fR
+Set display name for backup job.
+.TP
+\fB\-\-debug\fR
+Show mode information about code errors.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show help.
+.TP
+\fB\-v\fR, \fB\-\-version\fR
+Show version.

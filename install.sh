@@ -8,9 +8,11 @@ LIBS='lib'
 CONFDIR='/etc/conserve'
 BINDIR='/usr/sbin'
 LIBDIR='/usr/lib/conserve'
+MANDIR='/usr/share/man/man1'
 INFORM='inform.conf'
 CRED='cred'
 LOGROTATE='conserve.lr'
+MAN='./man/conserve.1'
 USER=`/usr/bin/env |grep -c USER=root`
 #### PROGRAM ###################################################################
 function copyconf {
@@ -53,6 +55,14 @@ function install {
 	copyconf $CRED
 	CONFDIR='/etc/logrotate.d'
 	copyconf $LOGROTATE
+
+    cp -f $MAN $MANDIR
+    if [ $? -eq 0 ]; then
+      echo -e "\t$MAN copied to $MANDIR"
+    else
+      echo -e "\tfailed to copy $MAN to $MANDIR"
+    fi
+
 	echo -e "\033[1m OK. \033[0m"
 }
 

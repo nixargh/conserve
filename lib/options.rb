@@ -132,7 +132,7 @@ eos
       options[:plain_files_tree] = true
     end
 
-    params.on('-s', '--source [SOURCE1] [SOURCE2]', Array, help[:source]) do |source|
+    params.on('-s', '--source SOURCE1[,SOURCE2,*]', Array, help[:source]) do |source|
       options[:source] = source
     end
 
