@@ -16,74 +16,73 @@ MAN='./man/conserve.1'
 USER=`/usr/bin/env |grep -c USER=root`
 #### PROGRAM ###################################################################
 function copyconf {
-  CONFIG=$1
-  if test -e ./$CONFIG; then
-    if test -e $CONFDIR/$CONFIG; then
-      mv $CONFDIR/$CONFIG $CONFDIR/$CONFIG.bak
-      echo -e "\t$CONFDIR/$CONFIG moved to $CONFDIR/$CONFIG.bak"
-    fi
-    cp ./$CONFIG $CONFDIR
-    echo -e "\t./$CONFIG copied to $CONFDIR/"
-    chmod 660 $CONFDIR/$CONFIG
-    chown root:root $CONFDIR/$CONFIG
-  fi
+	CONFIG=$1
+	if test -e ./$CONFIG; then
+		if test -e $CONFDIR/$CONFIG; then
+			mv $CONFDIR/$CONFIG $CONFDIR/$CONFIG.bak
+			echo -e "\t$CONFDIR/$CONFIG moved to $CONFDIR/$CONFIG.bak"
+		fi
+		cp ./$CONFIG $CONFDIR
+		echo -e "\t./$CONFIG copied to $CONFDIR/"
+		chmod 660 $CONFDIR/$CONFIG
+		chown root:root $CONFDIR/$CONFIG
+	fi
 }
 
 function install {
-  echo -e "\033[1m Installing... \033[0m"
-  if test ! -d $CONFDIR; then
-    mkdir $CONFDIR
-  fi
-  chmod 770 $CONFDIR
+	echo -e "\033[1m Installing... \033[0m"
+	if test ! -d $CONFDIR; then
+		mkdir $CONFDIR
+	fi
+	chmod 770 $CONFDIR
 
-  cp -f ./$BIN $BINDIR/conserve
-  echo -e "\t./$BIN copied to $BINDIR/conserve"
-  chmod 755 $BINDIR/conserve
-  chown root:root $BINDIR/conserve
+	cp -f ./$BIN $BINDIR/conserve
+	echo -e "\t./$BIN copied to $BINDIR/conserve"
+	chmod 755 $BINDIR/conserve
+	chown root:root $BINDIR/conserve
 
-  if test ! -d $LIBDIR; then
-    mkdir $LIBDIR
-  fi
-  rm -f $LIBDIR/*
-  echo -e "\told libs deleted from $LIBDIR"
-  cp -f ./$LIBS/* $LIBDIR
-  echo -e "\tlibs copied to $LIBDIR"
-  chown root:root -R $LIBDIR
-  chmod 755 $LIBDIR
-  chmod 644 $LIBDIR/*
+	if test ! -d $LIBDIR; then
+		mkdir $LIBDIR
+	fi
+	rm -f $LIBDIR/*
+	echo -e "\told libs deleted from $LIBDIR"
+	cp -f ./$LIBS/* $LIBDIR
+	echo -e "\tlibs copied to $LIBDIR"
+	chmod 644 -R $LIBDIR
+	chown root:root -R $LIBDIR
 
-  copyconf $INFORM
-  copyconf $CRED
-  CONFDIR='/etc/logrotate.d'
-  copyconf $LOGROTATE
+	copyconf $INFORM
+	copyconf $CRED
+	CONFDIR='/etc/logrotate.d'
+	copyconf $LOGROTATE
 
-  gzip $MAN -c > $MANDIR/conserve.1.gz
-  if [ $? -eq 0 ]; then
-    echo -e "\t$MAN copied to $MANDIR"
-  else
-    echo -e "\tfailed to copy $MAN to $MANDIR"
-  fi
+    cp -f $MAN $MANDIR
+    if [ $? -eq 0 ]; then
+      echo -e "\t$MAN copied to $MANDIR"
+    else
+      echo -e "\tfailed to copy $MAN to $MANDIR"
+    fi
 
-  echo -e "\033[1m OK. \033[0m"
+	echo -e "\033[1m OK. \033[0m"
 }
 
 if [ "$USER" != "0" ]; then
-  if test -e $BINDIR/conserve; then
-    echo -ne "\033[1m $BINDIR/conserve exist, replace it? [y|n]:  \033[0m"
-    read -a ANSWER
-    if [ $ANSWER == 'y' ];then
-      install
-    elif [ $ANSWER == 'n' ];then
-      echo "Exiting."
-      exit 0;
-    else
-      echo "Bad answer \"$ANSWER\". Exiting."
-      exit 1;
-    fi
-  else
-    install
-    exit 0;
-  fi
+	if test -e $BINDIR/conserve; then
+		echo -ne "\033[1m $BINDIR/conserve exist, replace it? [y|n]:  \033[0m"
+		read -a ANSWER
+		if [ $ANSWER == 'y' ];then
+			install
+		elif [ $ANSWER == 'n' ];then
+			echo "Exiting."
+			exit 0;
+		else
+			echo "Bad answer \"$ANSWER\". Exiting."
+			exit 1;
+		fi
+	else
+		install
+		exit 0;
+	fi
 else
   echo -e "  \033[1m login as root first! \033[0m"
   exit 1;
