@@ -36,7 +36,7 @@ class Baremetal
   def compile_mbr_backup! # creates job to backup Master Boot Record of device with bootloader
     job = Hash.new
     job[:job_name] = "MBR backup"
-    job[:source] = @sysinfo['boot']['bootloader_on']
+    job[:source] = [@sysinfo['boot']['bootloader_on']]
     job[:destination] = "#{@destination}/mbr"
     job[:dest_target_type] = 'file'
     job[:mbr] = true
@@ -49,7 +49,7 @@ class Baremetal
       if boot_partition
         job = Hash.new
         job[:job_name] = "BOOT backup"
-        job[:source] = boot_partition
+        job[:source] = [boot_partition]
         #job[:destination] = "#{@destination}/boot_#{File.basename(boot_partition)}"
         job[:use_lvm] = false
         job[:archive] = true
@@ -63,7 +63,7 @@ class Baremetal
         if @partitions_to_mount.index(lv)
           job = Hash.new
           job[:job_name] = "#{lv} backup"
-          job[:source] = lv
+          job[:source] = [lv]
           job[:archive] = true
           @jobs.push(job)
         end
@@ -76,7 +76,7 @@ class Baremetal
       if partition =~ /\/dev\/[shm]d[a-z]*[0-9]+/ && partition != @sysinfo['boot']['partition']
         job = Hash.new
         job[:job_name] = "#{partition} backup"
-        job[:source] = partition
+        job[:source] = [partition]
         job[:use_lvm] = false
         job[:archive] = true
         @jobs.push(job)

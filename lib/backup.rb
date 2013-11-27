@@ -175,7 +175,7 @@ class Backup
   def prepaire_source(source) # return array of sources path
     source_files = Array.new
     source.each{|source|
-      source.strip!
+      source = source.strip
       if source
         if source[-1, 1] == '*'
           top_dir = File.dirname(source)
