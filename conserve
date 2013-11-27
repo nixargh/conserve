@@ -106,7 +106,9 @@ class Conserve
     save_sysinfo! if @params[:collect]
   end
 
-  def save_sysinfo! # saves system information to file 
+  # saves system information to file
+  #
+  def save_sysinfo! 
     if @params[:collect_dir] || @params[:destination]
       destination = @params[:collect_dir] ? @params[:collect_dir] : @params[:destination]
       if File.directory?(destination)
@@ -155,6 +157,7 @@ class Conserve
     raise "You have to specify source and destination for backup." if !params[:source] || !params[:destination]
     backup = Backup.new(params[:source], params[:destination], params[:dest_target_type])
     backup.log = @log
+    backup.sysinfo = @sysinfo
     backup.mbr = true if params[:mbr]
     backup.job_name = params[:job_name]
     backup.lvm = params[:use_lvm] ? @lvm : nil
@@ -164,7 +167,7 @@ class Conserve
     backup.plain = params[:plain_files_tree] if params[:plain_files_tree]
     backup.rsync_options = params[:rsync_options] if params[:rsync_options]
     if params[:sysinfo_save_at_backup]
-      backup.sysinfo = @sysinfo
+      backup.save_sysinfo = true
       @params[:sysinfo_save_at_backup] = false 
     end
     backup.create!

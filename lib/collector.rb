@@ -21,7 +21,9 @@ class Collector
     @creatures = Hash.new []
   end
 
-  def collect # collect iformation about creatures
+  # collect iformation about creatures
+  #
+  def collect
     list_disks!
     @creatures['hdd'] = get_hdd_info
     @creatures['md'] = get_md_info
@@ -169,8 +171,20 @@ class Collector
     raise "can't find lv for vg=\"#{vg}\": #{error}." if error
 
     info.each_line.inject([]) do |lvs, line|
-      lvs << line.strip!.split(':').first
+      lvs << get_lv_info(line)
     end
+  end
+
+  # Parse string of "lvdisplay -c" ouput fo LVM lv properties
+  #
+  def get_lv_info(string)
+    lv = Hash.new
+    string.strip!
+    name,vg,access,status,num,openc,ssize = string.split(':')
+    lv['name'] = name 
+    lv['size'] = ssize.to_i * 512
+    lv['uuid'], lv['type'], lv['label'] = get_uuid_type_label(name)
+    lv
   end
 
   # Collect information about how to mount partitions.
@@ -298,6 +312,10 @@ class Collector
     @creatures['partition'].each do |hdd|
       return name if name
       name = find_attribute(hdd['partitions'], type, value)
+    end
+    @creatures['lvm'].each do |vg|
+      return name if name
+      name = find_attribute(vg['lvs'], type, value)
     end
     name
   end
