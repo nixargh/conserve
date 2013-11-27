@@ -14,7 +14,7 @@
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 class Backup
-  attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo, :job_name, :rsync_options
+  attr_accessor :log, :mount_point, :credential_file, :archive, :mbr, :plain, :lvm, :sysinfo, :save_sysinfo, :job_name, :rsync_options
   include Add_functions
   
   def initialize(source, destination, dest_target_type)
@@ -31,6 +31,7 @@ class Backup
     @mbr = nil
     @plain = false
     @sysinfo = nil
+    @save_sysinfo = nil
     @job_name = destination
     @rsync = false
     @rsync_options = nil
@@ -53,7 +54,7 @@ class Backup
 
       dest_path = prepaire_destination(@destination)
 
-      save_sysinfo!(dest_path) if @sysinfo
+      save_sysinfo!(dest_path) if @save_sysinfo
 
       source_files = prepaire_source(@source)
 
@@ -72,7 +73,7 @@ class Backup
             backup_mbr(source_file, destination_file)
           else
           # do image of snapshot or raw partition
-            if @lvm
+            if @lvm && is_lv?(source_file)
               # do snapshot
               source_file = do_snapshot(source_file)
             end
@@ -83,15 +84,17 @@ class Backup
           if @lvm
             device, mount_point = guess_file_volume(source_file)
             @log.write("\t\t\tFound block device \"#{device}\" for source file(s): #{source_file}.")
-            device = do_snapshot(device)
-            new_mount_point = mount(device, 'local')
+            if is_lv?(device)
+              device = do_snapshot(device)
+              new_mount_point = mount(device, 'local')
 #            if (new_source_file = find_symlink(source_file))
 #              source_file = new_source_file
 #            end
-            if mount_point == '/'
-              source_file = "#{new_mount_point}#{source_file}"
-            else
-              source_file.gsub!(/\A#{mount_point}/, new_mount_point)
+              if mount_point == '/'
+                source_file = "#{new_mount_point}#{source_file}"
+              else
+                source_file.gsub!(/\A#{mount_point}/, new_mount_point)
+              end
             end
           end  
           if @rsync
@@ -484,7 +487,10 @@ class Backup
     end
   end
   
-  def guess_file_volume(file) # detect partition where file stored
+  # detect for what partition file belongs to
+  # return device name and it's mount point
+  #
+  def guess_file_volume(file)
     begin
       raise "file #{file} not found" if !File.exist?(file)
       info, error = runcmd("df -T \"#{file}\"")
@@ -503,7 +509,9 @@ class Backup
       elsif info.length > 2
         raise "multiline output of df -T: #{info}"
       end
-      device, a, b, c, d, e, mount_point = info.split(' ')
+      info = info.split(' ')
+      device = convert_to_non_mapper(info.first)
+      mount_point = info.last
       return device, mount_point
     rescue
       raise "Can't guess filesystem of file \"#{file}\": #{$!}."
@@ -665,5 +673,22 @@ class Backup
       file.write(@sysinfo.to_yaml)  
     }
     @log.write("SysInfo saved.", 'yellow') if @debug
+  end
+
+  # checks if device is LVM logical volume
+  #
+  def is_lv?(device)
+    #puts "sysinfo: #{@sysinfo['lvm']}"
+    @log.write_noel("\t\t\t\"#{device}\" is LVM logical volume - ")
+    @sysinfo['lvm'].each do |vg|
+      vg['lvs'].each do |lv|
+        if lv['name'] == device 
+          @log.write('[TRUE]', 'green')
+          return true
+        end
+      end
+    end
+    @log.write('[FALSE]', 'yellow')
+    false
   end
 end
