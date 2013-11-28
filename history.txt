@@ -1,5 +1,5 @@
 Conserve history.
-version 55
+version 56
 
 conserve:
 	to do:
@@ -16,6 +16,7 @@ conserve:
             2. Collect now get more information about LVM logical volumes: size, UUID, type.
             3. Backup check if source is LVM partition or not.
             4. Baremetal: source generation fixed.
+            5. Backup#guess_file_volume: some fixes. 
 
 	0.3.0
 			0. Merge devel to master.

@@ -510,7 +510,8 @@ class Backup
         raise "multiline output of df -T: #{info}"
       end
       info = info.split(' ')
-      device = convert_to_non_mapper(info.first)
+      device = info.first
+      device = convert_to_non_mapper(device) if device.index('mapper')
       mount_point = info.last
       return device, mount_point
     rescue

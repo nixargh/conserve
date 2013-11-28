@@ -70,7 +70,10 @@ module Add_functions
     end
   end
 
-  def convert_to_non_mapper(device) # convert "device mapper path" to "normal device name"
+  # covert Device Mapper path to "normal device name"
+  # example: /dev/mapper/system-var to /dev/system/var
+  #
+  def convert_to_non_mapper(device)
     temp_symbol = '?'
     device.gsub!(/-{2}/, temp_symbol)
     lg, lv = File.basename(device).split('-')
