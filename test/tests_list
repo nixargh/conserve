@@ -63,7 +63,7 @@
 #[Files to local file without LVM plain                 ] -s @src_files1 -d @dst_file_loc -p --no-lvm
 [Files to local directory without LVM plain             ] -s @src_files1 -D @dst_dir_loc -p --no-lvm
 # Baremetal
-#[Baremetal to local directory                          ] -b -D @dst_dir_loc
+#[Baremetal to local directory                           ] -b -D @dst_dir_loc
 #[Baremetal with exclude to local directory              ] -b -D @dst_dir_loc -e @excl_dev1
 # NFS
 #[Baremetal to NFS directory                            ] -b -D @dst_dir_nfs

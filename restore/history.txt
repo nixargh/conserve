@@ -1,0 +1,18 @@
+ahco history.
+version 1 
+
+ahco:
+	to do:
+      Automatic restore (baremetal):
+        1. Find out what we need to restore.
+          a. Ask where to find backup.
+          b. Mount backup folder.
+          c. Read sysinfo.
+          d. Check that we have all required files.
+        2. Find out what volumes we have.
+        3. Deside how to push our backup to our volumes.
+      Manual restore:
+        1. Ask what.
+        2. Ask where.
+        3. Check if it's possible.
+        4. Do it.

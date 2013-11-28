@@ -393,15 +393,18 @@ class Backup
     size = `blockdev --getsize64 #{device}`.strip.to_i
   end
 
-  def backup_mbr(source_device, destination_file) # backups Master Boot Record of block device
+  # backups Master Boot Record of block device
+  # better to say that it copy first 512 bytes of source_device
+  #
+  def backup_mbr(source_device, destination_file)
     if File.blockdev?(source_device)
-      @log.write_noel("\t\t\tRunning MBR backup of #{source_device} to #{destination_file}, please wait... - ")
-      `dd if=#{source_device} of=#{destination_file} bs=512 count=1 1>/dev/null 2>/dev/null`
-      if File.exist?(destination_file)
+      @log.write_noel("\t\t\tRunning MBR backup of #{source_device} to #{destination_file} - ")
+      info, error, exit_code = runcmd("dd if=#{source_device} of=#{destination_file} bs=512 count=1 1>/dev/null 2>/dev/null")
+      if exit_code == 0
         @log.write('[OK]', 'green')
       else
         @log.write('[FAILED]', 'red')
-        raise "MBR backup destination file \"#{destination_file}\" not found"
+        raise "Backup of MBR from \"#{destination_file}\" failed: #{error}"
       end
     else
       raise "Can't backup MBR: #{source_device} isn't a block device"

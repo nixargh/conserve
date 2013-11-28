@@ -1,5 +1,5 @@
 Conserve history.
-version 56
+version 57
 
 conserve:
 	to do:
@@ -9,14 +9,20 @@ conserve:
 			3. Add backup of multiple sources to one file.
 			4. Collector#read_partitions: Write alternative partitions detection for GPT partition table.
 			5. Send report without creating log file. Should create array of strings that sended to @log and send this array in report.
+            6. [BUG] baremetal: mbr backup show double "/" at destination path.
+            7. Think about image verification.
+            8. Add detection of non GRUB* bootloaders (lilo, syslinux).
 
     0.3.1
             0. Starting code cleaning by merge devel to s-mage-master. Plus some fixes.
             1. Test engine is written. It can't check if backups are good, but it test that conserve job ended successfuly. INFO: Cifs, NFS and rsync tests not tested yet.
             2. Collect now get more information about LVM logical volumes: size, UUID, type.
-            3. Backup check if source is LVM partition or not.
+            3. Backup checkis if source is LVM partition or not.
             4. Baremetal: source generation fixed.
             5. Backup#guess_file_volume: some fixes. 
+            6. Baremetal#compile_lvm_volumes_backup! and Backup#exclude! fixed. The problem was that source now is Array.
+            7. @debug became $debug and now can be used at all libraries.
+            8. Backup#backup_mbr rewrited using runcmd().
 
 	0.3.0
 			0. Merge devel to master.
@@ -161,9 +167,3 @@ conserve:
 			5. [BUG] 28/06/2011 - fixed at 1.8.1 - [*** "parse_and_mount" destination error: Can't mount device or network share:
 				You need to install "mount.cifs"] error on SLES11.
 			6. [BUG] 06/07/2011 - fixed at 2.0.0 - [*** undefined method `/' for nil:NilClass ***] when backuping lvm partition without LVM snapshot
-		
-		
-
-restore:
-	to do:
-			1. REWRITE RESTORE COMPLETELY! Going to use information collected in backup process.

@@ -175,7 +175,7 @@ class Collector
     end
   end
 
-  # Parse string of "lvdisplay -c" ouput fo LVM lv properties
+  # Parse string of "lvdisplay -c" ouput for LVM lv properties
   #
   def get_lv_info(string)
     lv = Hash.new

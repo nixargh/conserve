@@ -28,6 +28,7 @@ class Baremetal
     compile_lvm_volumes_backup!
     compile_nonlvm_volumes_backup!
     exclude! if @exclude
+    puts @jobs if $debug
     @jobs
   end
 
@@ -60,10 +61,10 @@ class Baremetal
   def compile_lvm_volumes_backup! # creates jobs to backup LVM logical volumes that figurate at fstab
     @sysinfo['lvm'].each{|vg|
       vg['lvs'].each{|lv|
-        if @partitions_to_mount.index(lv)
+        if @partitions_to_mount.index(lv['name'])
           job = Hash.new
-          job[:job_name] = "#{lv} backup"
-          job[:source] = [lv]
+          job[:job_name] = "#{lv['name']} backup"
+          job[:source] = [lv['name']]
           job[:archive] = true
           @jobs.push(job)
         end
@@ -101,7 +102,7 @@ class Baremetal
     exclude_jobs = Array.new
     @jobs.each{|job|
       @exclude.each{|exclude|
-        exclude_jobs.push(job) if job[:source] == exclude
+        exclude_jobs.push(job) if job[:source].first == exclude
       }
     }
     exclude_jobs.each{|job|
