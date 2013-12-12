@@ -3,6 +3,17 @@ version 1
 
 ahco:
 	to do:
+      Restore actions:
+        1. restore MBR.
+        2. restore partition.
+      Create actions:
+        1. Create partition.
+        2. Format partition as swap.
+        3. Format partition as ext*,vfat,ntfs etc.
+      LVM:
+        1. Create LVM pv.
+        2. Create LVM vg.
+        3. Create LVM lv.
       Automatic restore (baremetal):
         1. Find out what we need to restore.
           a. Ask where to find backup.
