@@ -19,20 +19,20 @@
 # This file is for options parsing.
 
 def parse_options
+  puts "\tParsing options from array: #{ARGV}..." if $debug
   require 'optparse'
 
-# Explanation for options.
-#
-  help = Hash.new('don\'t know')
-  help[:help] = <<-eos
-"AHCO  Copyright (C) 2013  nixargh <nixargh@gmail.com>
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, and you are welcome to redistribute it
-under certain conditions.\n
-AHCO v.#{$version}
-- is a restore utility for Conserve backups, which can do:
-\t0. Nothing :)\n
-eos
+  # Explanation for options.
+  #
+  help = Hash.new()
+  help[:help] = "AHCO  Copyright (C) 2013  nixargh <nixargh@gmail.com>\n
+This program comes with ABSOLUTELY NO WARRANTY.\n
+This is free software, and you are welcome to redistribute it under certain\n
+conditions.\n
+AHCO v.#{$version}\n
+- is a restore utility for Conserve backups.\n"
+
+#  help[:help] = "help"
 
   # Parse options
   # 
@@ -43,5 +43,10 @@ eos
 
     params.on('-h', '--help', help[:help]) do
       options[:help] = true
+      puts params
     end
-  end
+  end.parse!
+
+  puts
+  options
+end

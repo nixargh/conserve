@@ -20,15 +20,42 @@ $version = '0.0.1.0'
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 #### SETTINGS ##################################################################
+$debug = true
 #### REQUIRE ###################################################################
 require 'fileutils'
 #### CLASES ####################################################################
 class AHCO
   def initialize
+    puts "Initializing new AHCO..." if $debug
     @lib_dir = '/usr/lib/ahco'
+    ENV['PATH'] = "#{ENV['PATH']}"
   end
 
-  def load_libraries!
+  # start all staff
+  #
+  def start
+    puts "Loading libraries..." if $debug
+    load_libraries
+    @params = parse_options
+    $debug = @params[:debug]
+  end
+
+  # load libraries
+  #
+  def load_libraries
+    File.directory?("./lib") ? $LOAD_PATH.unshift("./lib") : $LOAD_PATH.unshift(@lib_dir)
+    require 'options'
+  end
 end
 #### FUNCTIONS #################################################################
 #### PROGRAM ###################################################################
+begin
+  puts 'START' if $debug
+  ahco = AHCO.new
+  ahco.start
+  puts 'END' if $debug
+rescue
+  puts "\t#{$!}"
+  puts $!.backtrace if $debug
+  exit 1
+end

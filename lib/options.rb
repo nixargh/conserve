@@ -36,7 +36,7 @@ exclude devices from baremetal backup;
 \t\t\t\t\t\t\t"/dev/vg/lv". List of devices shoud be comma separated without spaces.
 eos
   help[:help] = <<-eos
-"Conserve  Copyright (C) 2013  nixargh <nixargh@gmail.com>
+Conserve  Copyright (C) 2013  nixargh <nixargh@gmail.com>
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it
 under certain conditions.\n
@@ -51,7 +51,7 @@ Conserve v.#{$version}
 \t7. Find out what to backup for bare metal restore.
 \t8. Send report by email.\n
 eos
-  help[:source] = <<eos
+  help[:source] = <<-eos
 full path to block device, file or directory to backup;
 \t\t\t\t\t\t\t'/dir/file, /dir, /dev/blockdev' - you can specify source as comma-separated list;
 \t\t\t\t\t\t\t'/dir/*' can be used to backup all directory entries as individual sources. WARNING - BUG: use it only inside quotes.
