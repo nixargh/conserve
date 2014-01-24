@@ -43,7 +43,19 @@ module Add_functions
     fromated_size
   end
 
-  def runcmd(cmd) # gets information after running external utility
+  # Internal: Get information after running external utility.
+  #
+  # cmd - a string with shell command
+  #
+  # Examples
+  #
+  #   runcmd('ps aux')
+  #
+  #   runcmd('dd if=/dev/random of=/dev/null')
+  #
+  # Returns 3 values: string with STDOUT returned from shell command,
+  #   sting with STDERR returned from shell command and integer number with exit code.
+  def runcmd(cmd)
     begin
       temp_log_err = "/tmp/conseve_cmd_err_#{rand(10000)}"
       temp_log = "/tmp/conseve_cmd_#{rand(10000)}"

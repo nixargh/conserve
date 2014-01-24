@@ -20,7 +20,11 @@ $version = '0.0.1.0'
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
 #### SETTINGS ##################################################################
-$debug = true
+if ARGV.index("-d") || ARGV.index("--debug")
+  $debug = true
+else
+  $debug = false
+end
 #### REQUIRE ###################################################################
 require 'fileutils'
 #### CLASES ####################################################################
@@ -34,7 +38,6 @@ class AHCO
   # start all staff
   #
   def start
-    puts "Loading libraries..." if $debug
     load_libraries
     @params = parse_options
     $debug = @params[:debug]
@@ -43,9 +46,28 @@ class AHCO
   # load libraries
   #
   def load_libraries
+    puts "Loading libraries..." if $debug
     File.directory?("./lib") ? $LOAD_PATH.unshift("./lib") : $LOAD_PATH.unshift(@lib_dir)
+    require 'add_functions' 
     require 'options'
+    require 'disk'
   end
+
+  # collect information about system resources
+  #
+  def collect_sysinfo
+  end
+
+  # hard disk operations
+  #
+  def operate_disk
+  end
+
+  # LVM operations
+  #
+  def operate_lvm
+  end
+
 end
 #### FUNCTIONS #################################################################
 #### PROGRAM ###################################################################

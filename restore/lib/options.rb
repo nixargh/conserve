@@ -17,7 +17,7 @@
 
 
 # This file is for options parsing.
-
+#
 def parse_options
   puts "\tParsing options from array: #{ARGV}..." if $debug
   require 'optparse'
@@ -25,14 +25,11 @@ def parse_options
   # Explanation for options.
   #
   help = Hash.new()
-  help[:help] = "AHCO  Copyright (C) 2013  nixargh <nixargh@gmail.com>\n
-This program comes with ABSOLUTELY NO WARRANTY.\n
-This is free software, and you are welcome to redistribute it under certain\n
-conditions.\n
-AHCO v.#{$version}\n
-- is a restore utility for Conserve backups.\n"
-
-#  help[:help] = "help"
+  help[:help] = "show this message"
+  help[:debug] = "be verbose - show debug information"
+  help[:source] = "source file"
+  help[:dest] = "destination file"
+  help[:mbr] = "restore Master Boot Record"
 
   # Parse options
   # 
@@ -44,9 +41,25 @@ AHCO v.#{$version}\n
     params.on('-h', '--help', help[:help]) do
       options[:help] = true
       puts params
+      exit 0
+    end
+
+    params.on('-V', '--debug', help[:debug]) do
+      options[:debug] = true
+    end
+
+    params.on('-s', '--source SOURCE', help[:source]) do |source|
+      options[:source] = source
+    end
+
+    params.on('-d', '--dest DESTINATION', help[:dest]) do |destination|
+      options[:dest] = destination
+    end
+
+    params.on('-m', '--mbr', help[:mbr]) do |mbr|
+      options[:mbr] = mbr
     end
   end.parse!
 
-  puts
   options
 end
